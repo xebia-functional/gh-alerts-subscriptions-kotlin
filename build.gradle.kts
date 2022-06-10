@@ -41,7 +41,6 @@ jib {
   container {
     ports = listOf("8080")
     mainClass = main
-
   }
   to {
     image = "ghcr.io/47deg/github-alerts-subscriptions-kotlin"
