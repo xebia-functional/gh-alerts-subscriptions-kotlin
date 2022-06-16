@@ -22,7 +22,7 @@ application {
 sqldelight {
   database("SqlDelight") {
     packageName = "alerts.sqldelight"
-    dialect = "app.cash.sqldelight:postgresql-dialect:2.0.0-alpha02"
+    dialect = libs.sqldelight.postgresql.asString
   }
 }
 
