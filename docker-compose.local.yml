@@ -1,0 +1,17 @@
+services:
+  postgres:
+    ports:
+      - 5432:5432
+
+  zookeeper:
+    ports:
+      - 2181:2181
+
+  broker:
+    ports:
+      - 9092:9092
+      - 9093:9093
+
+  schema-registry:
+    ports:
+      - 8081:8081

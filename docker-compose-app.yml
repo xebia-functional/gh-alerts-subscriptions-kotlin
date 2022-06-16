@@ -1,0 +1,12 @@
+services:
+  subscriptions:
+    image: "ghcr.io/47deg/github-alerts-subscriptions-kotlin:latest"
+    depends_on:
+      - postgres
+      - schema-registry
+    environment:
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/alerts
+      BOOTSTRAP_SERVERS: plaintext://broker:9093
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    ports:
+      - "8080:8080"
