@@ -1,0 +1,6 @@
+import alerts.persistence.UserId;
+
+CREATE TABLE IF NOT EXISTS users(
+  user_id BIGSERIAL AS UserId PRIMARY KEY,
+  slack_user_id VARCHAR UNIQUE NOT NULL
+);

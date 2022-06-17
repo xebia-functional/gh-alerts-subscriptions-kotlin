@@ -1,0 +1,11 @@
+import alerts.persistence.UserId;
+import alerts.persistence.RepositoryId;
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  user_id BIGSERIAL AS UserId NOT NULL,
+  repository_id BIGSERIAL AS RepositoryId NOT NULL,
+  subscribed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, repository_id, subscribed_to),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (repository_id) REFERENCES repositories(repository_id) ON DELETE CASCADE
+);
