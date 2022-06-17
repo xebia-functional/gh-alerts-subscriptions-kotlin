@@ -1,21 +1,21 @@
 package alerts
 
-import io.ktor.server.application.call
-import io.ktor.server.engine.addShutdownHook
+import alerts.env.Env
+import alerts.env.hikari
+import alerts.routes.healthRoute
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.response.respond
-import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
-fun main(): Unit {
-    embeddedServer(Netty, port = 8080) {
-        routing {
-            get("/ping") {
-                call.respond("pong")
-            }
-        }
-    }.apply {
-        addShutdownHook { stop() }
-    }.start(wait = true)
+fun main(): Unit = runBlocking(Dispatchers.Default) {
+  val env = Env()
+  hikari(env.postgres).use {
+    embeddedServer(Netty, host = env.http.host, port = env.http.port) {
+      routing {
+        healthRoute()
+      }
+    }.awaitShutdown()
+  }
 }

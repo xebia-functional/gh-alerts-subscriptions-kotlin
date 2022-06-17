@@ -54,6 +54,7 @@ tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
       jvmTarget = "${JavaVersion.VERSION_11}"
+      freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers" + "-opt-in=kotlin.RequiresOptIn"
     }
     sourceCompatibility = "${JavaVersion.VERSION_11}"
     targetCompatibility = "${JavaVersion.VERSION_11}"
