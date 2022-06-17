@@ -1,4 +1,4 @@
-rootProject.name = "ktor-arrow-sample"
+rootProject.name = "gh-alerts-subscriptions-kotlin"
 
 plugins {
   id("com.gradle.enterprise") version "3.10"

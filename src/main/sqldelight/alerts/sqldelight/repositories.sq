@@ -1,0 +1,8 @@
+import alerts.persistence.RepositoryId;
+
+CREATE TABLE IF NOT EXISTS repositories (
+  repository_id BIGSERIAL AS RepositoryId PRIMARY KEY,
+  owner VARCHAR NOT NULL,
+  repository VARCHAR NOT NULL,
+  CONSTRAINT unique_repos UNIQUE (owner, repository)
+);
