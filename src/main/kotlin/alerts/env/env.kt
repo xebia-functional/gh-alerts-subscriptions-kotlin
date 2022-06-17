@@ -35,13 +35,13 @@ data class Env(
 
   data class Kafka(
     val bootstrapServers: String = getenv("BOOTSTRAP_SERVERS") ?: "localhost:9092",
-    val schemaRegistryUrl: String = getenv("SCHEMA_REGISTRY_URL") ?: "http://localhost:8081"
+    val schemaRegistryUrl: String = getenv("SCHEMA_REGISTRY_URL") ?: "http://localhost:8081",
+    val subscriptionTopic: Topic = Topic(getenv("SUBSCRIPTION_TOPIC") ?: "subscriptions", 1, 1),
+    val eventTopic: Topic = Topic(getenv("EVENT_TOPIC") ?: "events", 1, 1),
+    val notificationTopic: Topic = Topic(getenv("NOTIFICATION_TOPIC") ?: "notifications", 1, 1)
   ) {
     data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Int)
 
     val eventConsumerGroupId = "github-event-consumer"
-    val subscriptionTopic = Topic("subscriptions", 1, 1)
-    val eventTopic = Topic("events", 1, 1)
-    val notificationTopic = Topic("notifications", 1, 1)
   }
 }
