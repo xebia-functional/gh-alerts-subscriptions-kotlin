@@ -32,6 +32,8 @@ allprojects {
 
 repositories {
   mavenCentral()
+  // For Kotest Extensions Arrow Fx, remove if 1.1.3 is released
+  maven(url= "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 jib {

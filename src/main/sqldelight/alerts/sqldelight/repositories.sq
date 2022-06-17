@@ -6,3 +6,12 @@ CREATE TABLE IF NOT EXISTS repositories (
   repository VARCHAR NOT NULL,
   CONSTRAINT unique_repos UNIQUE (owner, repository)
 );
+
+insert:
+INSERT INTO repositories(owner, repository)
+VALUES (:repositoryOwner, :repositoryName)
+RETURNING repository_id;
+
+-- ON CONFLICT
+-- ON CONSTRAINT unique_repos
+-- DO UPDATE SET owner = EXCLUDED.Owner;

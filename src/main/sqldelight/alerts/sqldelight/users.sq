@@ -1,6 +1,27 @@
 import alerts.persistence.UserId;
+import alerts.persistence.SlackUserId;
 
 CREATE TABLE IF NOT EXISTS users(
   user_id BIGSERIAL AS UserId PRIMARY KEY,
-  slack_user_id VARCHAR UNIQUE NOT NULL
+  slack_user_id VARCHAR AS SlackUserId UNIQUE NOT NULL
 );
+
+insert:
+INSERT INTO users(slack_user_id)
+VALUES (:slackUserId)
+RETURNING user_id;
+
+findSlackUser:
+SELECT user_id, slack_user_id
+FROM users
+WHERE slack_user_id = :slackUserId;
+
+find:
+SELECT user_id, slack_user_id
+FROM users
+WHERE user_id = :userId;
+
+findUsers:
+SELECT user_id, slack_user_id
+FROM users
+WHERE user_id IN :userId;
