@@ -10,6 +10,5 @@ CREATE TABLE IF NOT EXISTS repositories (
 insert:
 INSERT INTO repositories(owner, repository)
 VALUES (:repositoryOwner, :repositoryName)
-ON CONFLICT (owner, repository_id) DO UPDATE SET
-  owner = :repositoryOwner
+ON CONFLICT DO NOTHING
 RETURNING repository_id;
