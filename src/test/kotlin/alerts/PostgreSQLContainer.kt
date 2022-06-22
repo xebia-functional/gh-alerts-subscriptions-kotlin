@@ -1,6 +1,9 @@
 package alerts
 
 import alerts.env.Env
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.testcontainers.containers.wait.strategy.Wait
 
 /**
  * A singleton `PostgreSQLContainer` Test Container.
@@ -20,8 +23,17 @@ class PostgreSQLContainer private constructor() :
       Env.Postgres(jdbcUrl, username, password)
     }
 
+    suspend fun clear() = withContext(Dispatchers.IO) {
+      instance.createConnection("").use { conn ->
+        conn.prepareStatement("TRUNCATE users CASCADE").use {
+          it.executeLargeUpdate()
+        }
+      }
+    }
+
     private val instance by lazy {
       PostgreSQLContainer()
+        .waitingFor(Wait.forListeningPort())
         .also(PostgreSQLContainer::start)
     }
   }

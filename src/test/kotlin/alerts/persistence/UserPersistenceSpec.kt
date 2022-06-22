@@ -16,6 +16,8 @@ class UserPersistenceSpec : StringSpec({
     userPersistence(it.usersQueries)
   })
 
+  afterTest { PostgreSQLContainer.clear() }
+
   "Insert user" {
     val slackUserId = SlackUserId("test-user-id")
     persistence.insertSlackUser(slackUserId).slackUserId shouldBe slackUserId
