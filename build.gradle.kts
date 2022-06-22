@@ -22,7 +22,7 @@ application {
 sqldelight {
   database("SqlDelight") {
     packageName = "alerts.sqldelight"
-    dialect = libs.sqldelight.postgresql.asString
+    dialect(libs.sqldelight.postgresql.asString)
   }
 }
 
@@ -32,6 +32,8 @@ allprojects {
 
 repositories {
   mavenCentral()
+  // For Kotest Extensions Arrow Fx, remove if 1.1.3 is released
+  maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 jib {
@@ -48,7 +50,10 @@ jib {
   }
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_11
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
+}
 
 tasks {
   withType<KotlinCompile>().configureEach {
@@ -56,8 +61,6 @@ tasks {
       jvmTarget = "${JavaVersion.VERSION_11}"
       freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers" + "-opt-in=kotlin.RequiresOptIn"
     }
-    sourceCompatibility = "${JavaVersion.VERSION_11}"
-    targetCompatibility = "${JavaVersion.VERSION_11}"
   }
 
   test {

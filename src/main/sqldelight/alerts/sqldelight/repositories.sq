@@ -6,3 +6,9 @@ CREATE TABLE IF NOT EXISTS repositories (
   repository VARCHAR NOT NULL,
   CONSTRAINT unique_repos UNIQUE (owner, repository)
 );
+
+insert:
+INSERT INTO repositories(owner, repository)
+VALUES (:repositoryOwner, :repositoryName)
+ON CONFLICT DO NOTHING
+RETURNING repository_id;

@@ -1,6 +1,7 @@
 package alerts.env
 
 import alerts.persistence.RepositoryId
+import alerts.persistence.SlackUserId
 import alerts.persistence.UserId
 import alerts.sqldelight.Repositories
 import alerts.sqldelight.SqlDelight
@@ -25,7 +26,7 @@ fun sqlDelight(env: Env.Postgres): Resource<SqlDelight> =
       driver,
       Repositories.Adapter(repositoryIdAdapter),
       Subscriptions.Adapter(userIdAdapter, repositoryIdAdapter),
-      Users.Adapter(userIdAdapter)
+      Users.Adapter(userIdAdapter, slackUserIdAdapter)
     )
   }
 
@@ -43,6 +44,7 @@ private fun hikari(env: Env.Postgres): Resource<HikariDataSource> =
 
 private val repositoryIdAdapter = columnAdapter(::RepositoryId, RepositoryId::serial)
 private val userIdAdapter = columnAdapter(::UserId, UserId::serial)
+private val slackUserIdAdapter = columnAdapter(::SlackUserId, SlackUserId::slackUserId)
 
 private inline fun <A : Any, B> columnAdapter(
   crossinline decode: (databaseValue: B) -> A,
