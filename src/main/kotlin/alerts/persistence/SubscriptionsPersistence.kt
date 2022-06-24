@@ -48,17 +48,12 @@ fun subscriptionsPersistence(
 
         catch({
           subscriptions.insert(user, repoId, subscribedAt)
-        }) { error: PSQLException ->
-          when (error.sqlState) {
-            PSQLState.FOREIGN_KEY_VIOLATION.state ->
-              if (error.message?.contains("subscriptions_user_id_fkey") == true) UserNotFound(user)
-              else null
-
-            else -> null
-          }
-        }
+        }) { error: PSQLException -> if (error.isUserIdUniqueViolation()) UserNotFound(user) else throw error }
       }.fold({ rollback(it.left()) }, { Unit.right() })
     }
+
+  private fun PSQLException.isUserIdUniqueViolation(): Boolean =
+    isForeignKeyViolation() && message?.contains("subscriptions_user_id_fkey") == true
 
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) =
     if (repositories.isEmpty()) Unit else subscriptions.transaction {
