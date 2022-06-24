@@ -3,6 +3,7 @@ package alerts.persistence
 import alerts.sqldelight.UsersQueries
 import arrow.core.Either
 import arrow.core.NonEmptyList
+import kotlinx.serialization.Serializable
 import org.postgresql.util.PSQLException
 import org.postgresql.util.PSQLState
 
@@ -10,6 +11,7 @@ import org.postgresql.util.PSQLState
 value class UserId(val serial: Long)
 
 @JvmInline
+@Serializable
 value class SlackUserId(val slackUserId: String)
 
 data class User(val userId: UserId, val slackUserId: SlackUserId)

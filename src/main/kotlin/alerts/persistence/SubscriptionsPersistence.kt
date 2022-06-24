@@ -6,6 +6,8 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import arrow.core.traverse
+import com.github.avrokotlin.avro4k.AvroNamespace
+import kotlinx.serialization.Serializable
 import org.postgresql.util.PSQLException
 import org.postgresql.util.PSQLState
 import java.time.LocalDateTime
@@ -13,6 +15,8 @@ import java.time.LocalDateTime
 @JvmInline
 value class RepositoryId(val serial: Long)
 
+@Serializable
+@AvroNamespace("alerts.domain.repository")
 data class Repository(val owner: String, val name: String)
 
 data class Subscription(val repository: Repository, val subscribedAt: LocalDateTime)
