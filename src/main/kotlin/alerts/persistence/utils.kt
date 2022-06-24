@@ -1,6 +1,5 @@
 package alerts.persistence
 
-import app.cash.sqldelight.TransactionWithReturn
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.nonFatalOrThrow
