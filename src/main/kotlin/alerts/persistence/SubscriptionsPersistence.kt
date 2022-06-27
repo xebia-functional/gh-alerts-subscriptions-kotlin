@@ -7,7 +7,6 @@ import arrow.core.left
 import arrow.core.right
 import arrow.core.traverse
 import org.postgresql.util.PSQLException
-import org.postgresql.util.PSQLState
 import java.time.LocalDateTime
 
 @JvmInline
@@ -48,11 +47,11 @@ fun subscriptionsPersistence(
 
         catch({
           subscriptions.insert(user, repoId, subscribedAt)
-        }) { error: PSQLException -> if (error.isUserIdUniqueViolation()) UserNotFound(user) else throw error }
+        }) { error: PSQLException -> if (error.isUserIdForeignKeyViolation()) UserNotFound(user) else throw error }
       }.fold({ rollback(it.left()) }, { Unit.right() })
     }
 
-  private fun PSQLException.isUserIdUniqueViolation(): Boolean =
+  private fun PSQLException.isUserIdForeignKeyViolation(): Boolean =
     isForeignKeyViolation() && message?.contains("subscriptions_user_id_fkey") == true
 
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) =
