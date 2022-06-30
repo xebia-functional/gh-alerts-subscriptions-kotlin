@@ -2,6 +2,11 @@ package alerts.persistence
 
 import alerts.sqldelight.RepositoriesQueries
 import alerts.sqldelight.SubscriptionsQueries
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import arrow.core.traverse
+import org.postgresql.util.PSQLException
 import java.time.LocalDateTime
 
 @JvmInline
@@ -11,16 +16,18 @@ data class Repository(val owner: String, val name: String)
 
 data class Subscription(val repository: Repository, val subscribedAt: LocalDateTime)
 
+data class UserNotFound(val userId: UserId)
+
 interface SubscriptionsPersistence {
   suspend fun findAll(user: UserId): List<Subscription>
   suspend fun findSubscribers(repository: Repository): List<UserId>
-  suspend fun subscribe(user: UserId, subscription: List<Subscription>): Unit
+  suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit>
   suspend fun unsubscribe(user: UserId, repositories: List<Repository>): Unit
 }
 
 fun subscriptionsPersistence(
   subscriptions: SubscriptionsQueries,
-  repositories: RepositoriesQueries
+  repositories: RepositoriesQueries,
 ) = object : SubscriptionsPersistence {
   override suspend fun findAll(user: UserId): List<Subscription> =
     subscriptions.findAll(user) { owner, repository, subscribedAt ->
@@ -30,16 +37,25 @@ fun subscriptionsPersistence(
   override suspend fun findSubscribers(repository: Repository): List<UserId> =
     subscriptions.findSubscribers(repository.owner, repository.name).executeAsList()
 
-  override suspend fun subscribe(user: UserId, subscription: List<Subscription>) =
-    subscriptions.transaction {
-      subscription.forEach { (repository, subscribedAt) ->
-        val repoId = repositories.insert(repository.owner, repository.name).executeAsOne()
-        subscriptions.insert(user, repoId, subscribedAt)
-      }
+  override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
+    subscriptions.transactionWithResult {
+      subscription.traverse { (repository, subscribedAt) ->
+        val repoId =
+          repositories.insert(repository.owner, repository.name).executeAsOneOrNull() ?: repositories.selectId(
+            repository.owner, repository.name
+          ).executeAsOne()
+
+        catch({
+          subscriptions.insert(user, repoId, subscribedAt)
+        }) { error: PSQLException -> if (error.isUserIdForeignKeyViolation()) UserNotFound(user) else throw error }
+      }.fold({ rollback(it.left()) }, { Unit.right() })
     }
 
+  private fun PSQLException.isUserIdForeignKeyViolation(): Boolean =
+    isForeignKeyViolation() && message?.contains("subscriptions_user_id_fkey") == true
+
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) =
-    subscriptions.transaction {
+    if (repositories.isEmpty()) Unit else subscriptions.transaction {
       repositories.forEach { (owner, name) ->
         subscriptions.delete(user, owner, name)
       }

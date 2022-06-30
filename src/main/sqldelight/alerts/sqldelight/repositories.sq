@@ -12,3 +12,8 @@ INSERT INTO repositories(owner, repository)
 VALUES (:repositoryOwner, :repositoryName)
 ON CONFLICT DO NOTHING
 RETURNING repository_id;
+
+selectId:
+SELECT repository_id
+FROM repositories
+WHERE owner = :owner AND repository = :repository;

@@ -2,32 +2,63 @@ package alerts.persistence
 
 import alerts.PostgreSQLContainer
 import alerts.env.sqlDelight
-import arrow.core.Either
+import arrow.core.nonEmptyListOf
 import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.assertions.arrow.fx.coroutines.resource
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.postgresql.util.PSQLException
 
 class UserPersistenceSpec : StringSpec({
   val postgresConfig = PostgreSQLContainer.config()
   val persistence by resource(sqlDelight(postgresConfig).map {
     userPersistence(it.usersQueries)
   })
+  val slackUserId = SlackUserId("test-user-id")
 
   afterTest { PostgreSQLContainer.clear() }
 
   "Insert user" {
-    val slackUserId = SlackUserId("test-user-id")
-    persistence.insertSlackUser(slackUserId).slackUserId shouldBe slackUserId
+    persistence.insertSlackUser(slackUserId).shouldBeRight().slackUserId shouldBe slackUserId
   }
 
   "Insert user twice fails" {
-    val slackUserId = SlackUserId("test-user-id")
-    persistence.insertSlackUser(slackUserId).slackUserId shouldBe slackUserId
-    Either.catch {
-      persistence.insertSlackUser(slackUserId)
-    }.shouldBeLeft()
+    persistence.insertSlackUser(slackUserId)
+    persistence.insertSlackUser(slackUserId).shouldBeLeft(UserAlreadyExists(slackUserId))
+  }
+
+  "find non-existing user results in null" {
+    persistence.find(UserId(0L)).shouldBeNull()
+  }
+
+  "find existing user" {
+    val user = persistence.insertSlackUser(slackUserId).shouldBeRight()
+    persistence.find(user.userId).shouldNotBeNull() shouldBe user
+  }
+  "findSlackUser non-existing user results in null" {
+    persistence.findSlackUser(SlackUserId("other-user")).shouldBeNull()
+  }
+
+  "findSlackUser existing user" {
+    val user = persistence.insertSlackUser(slackUserId).shouldBeRight()
+    persistence.findSlackUser(slackUserId).shouldNotBeNull() shouldBe user
+  }
+
+  "findUsers all non-existing is empty" {
+    val ids = nonEmptyListOf(UserId(0L), UserId(1L), UserId(2L))
+    persistence.findUsers(ids).shouldBeEmpty()
+  }
+
+  "findUsers existing users" {
+    val users = nonEmptyListOf(
+      persistence.insertSlackUser(slackUserId).shouldBeRight(),
+      persistence.insertSlackUser(SlackUserId("test-user-id-2")).shouldBeRight(),
+      persistence.insertSlackUser(SlackUserId("test-user-id-3")).shouldBeRight(),
+    )
+    val ids = users.map { it.userId }
+    persistence.findUsers(ids) shouldBe users
   }
 })
