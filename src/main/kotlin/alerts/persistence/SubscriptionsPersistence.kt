@@ -9,7 +9,6 @@ import arrow.core.traverse
 import com.github.avrokotlin.avro4k.AvroNamespace
 import kotlinx.serialization.Serializable
 import org.postgresql.util.PSQLException
-import org.postgresql.util.PSQLState
 import java.time.LocalDateTime
 
 @JvmInline
@@ -52,17 +51,12 @@ fun subscriptionsPersistence(
 
         catch({
           subscriptions.insert(user, repoId, subscribedAt)
-        }) { error: PSQLException ->
-          when (error.sqlState) {
-            PSQLState.FOREIGN_KEY_VIOLATION.state ->
-              if (error.message?.contains("subscriptions_user_id_fkey") == true) UserNotFound(user)
-              else null
-
-            else -> null
-          }
-        }
+        }) { error: PSQLException -> if (error.isUserIdForeignKeyViolation()) UserNotFound(user) else throw error }
       }.fold({ rollback(it.left()) }, { Unit.right() })
     }
+
+  private fun PSQLException.isUserIdForeignKeyViolation(): Boolean =
+    isForeignKeyViolation() && message?.contains("subscriptions_user_id_fkey") == true
 
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) =
     if (repositories.isEmpty()) Unit else subscriptions.transaction {

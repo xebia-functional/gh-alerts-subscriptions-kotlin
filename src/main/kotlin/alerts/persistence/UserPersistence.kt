@@ -39,7 +39,6 @@ fun userPersistence(queries: UsersQueries) = object : UserPersistence {
     catch({
       User(queries.insert(slackUserId).executeAsOne(), slackUserId)
     }) { error: PSQLException ->
-      if (error.sqlState == PSQLState.UNIQUE_VIOLATION.state) UserAlreadyExists(slackUserId)
-      else null
+      if (error.isUniqueViolation()) UserAlreadyExists(slackUserId) else throw error
     }
 }
