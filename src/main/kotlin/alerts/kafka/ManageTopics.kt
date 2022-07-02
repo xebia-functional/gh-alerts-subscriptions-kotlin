@@ -10,9 +10,9 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.fromAutoCloseable
 import com.github.avrokotlin.avro4k.Avro
-import com.github.nomisRev.kafka.Admin
-import com.github.nomisRev.kafka.AdminSettings
-import com.github.nomisRev.kafka.createTopic
+import io.github.nomisRev.kafka.Admin
+import io.github.nomisRev.kafka.AdminSettings
+import io.github.nomisRev.kafka.createTopic
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient

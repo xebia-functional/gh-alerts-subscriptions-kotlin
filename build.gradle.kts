@@ -83,13 +83,14 @@ dependencies {
   implementation(libs.flyway)
   implementation(libs.klogging)
   implementation(libs.avro4k)
-  implementation("io.github.nomisrev:kotlin-kafka:0.1")
-  implementation("io.confluent:kafka-schema-registry-client:7.1.1")
-  implementation("org.apache.avro:avro:1.11.0")
-  implementation("io.confluent:kafka-avro-serializer:7.1.1")
-
+  implementation(libs.kotlin.kafka)
+  implementation(libs.kafka.schema.registry)
+  implementation(libs.kafka.avro.serializer)
+  implementation(libs.avro)
+  
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
+  testImplementation(libs.testcontainers.kafka)
   testImplementation(libs.ktor.server.tests)
   testImplementation(libs.bundles.kotest)
 }
