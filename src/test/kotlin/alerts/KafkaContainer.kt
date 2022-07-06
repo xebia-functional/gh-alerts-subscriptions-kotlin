@@ -37,7 +37,7 @@ object KafkaContainer {
       val schemaRegistryImage: DockerImageName =
         if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-schema-registry-arm64:7.0.1")
           .asCompatibleSubstituteFor("confluentinc/cp-schema-registry")
-        else DockerImageName.parse("confluentinc/cp-schema-registry:6.2.1")
+        else DockerImageName.parse("confluentinc/cp-schema-registry:7.0.1")
       
       GenericContainer(schemaRegistryImage)
         .withNetwork(network)
@@ -60,7 +60,7 @@ object KafkaContainer {
       val zooKeeperImage: DockerImageName =
         if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-zookeeper-arm64:7.0.1")
           .asCompatibleSubstituteFor("confluentinc/cp-zookeeper")
-        else DockerImageName.parse("confluentinc/cp-zookeeper:6.2.1")
+        else DockerImageName.parse("confluentinc/cp-zookeeper:7.0.1")
       
       GenericContainer(zooKeeperImage)
         .withNetwork(network)
@@ -81,7 +81,7 @@ object KafkaContainer {
         val kafkaImage: DockerImageName =
           if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-kafka-arm64:7.0.1")
             .asCompatibleSubstituteFor("confluentinc/cp-kafka")
-          else DockerImageName.parse("confluentinc/cp-kafka:6.2.1")
+          else DockerImageName.parse("confluentinc/cp-kafka:7.0.1")
         
         KafkaContainer(kafkaImage)
           .withExposedPorts(9092, 9093)
