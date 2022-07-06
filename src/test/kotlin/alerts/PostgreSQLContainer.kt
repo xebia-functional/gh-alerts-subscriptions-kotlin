@@ -16,7 +16,7 @@ class PostgreSQLContainer private constructor() :
     Env.Postgres(jdbcUrl, username, password)
   
   suspend fun clear() = withContext(Dispatchers.IO) {
-    createConnection("test-clean-up-connection").use { conn ->
+    createConnection("").use { conn ->
       conn.prepareStatement("TRUNCATE users CASCADE").use {
         it.executeLargeUpdate()
       }
