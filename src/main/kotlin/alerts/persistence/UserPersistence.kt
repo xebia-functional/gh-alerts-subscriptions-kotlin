@@ -23,9 +23,11 @@ interface UserPersistence {
   suspend fun findSlackUser(slackUserId: SlackUserId): User?
   suspend fun findUsers(userIds: NonEmptyList<UserId>): List<User>
   suspend fun insertSlackUser(slackUserId: SlackUserId): Either<UserAlreadyExists, User>
+  suspend fun findOrInsertSlackUser(slackUserId: SlackUserId): User =
+    findSlackUser(slackUserId) ?: requireNotNull(insertSlackUser(slackUserId).orNull())
 }
 
-fun userPersistence(queries: UsersQueries) = object : UserPersistence {
+fun userPersistence(queries: UsersQueries): UserPersistence = object : UserPersistence {
   override suspend fun find(userId: UserId): User? =
     queries.find(userId, ::User).executeAsOneOrNull()
 

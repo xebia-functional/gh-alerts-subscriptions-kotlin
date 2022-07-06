@@ -87,6 +87,8 @@ dependencies {
   implementation(libs.kafka.schema.registry)
   implementation(libs.kafka.avro.serializer)
   implementation(libs.avro)
+  implementation("io.github.nomisrev:kotlinx-serialization-jsonpath:0.1.0")
+  implementation("io.ktor:ktor-client-apache:2.0.3")
   
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)

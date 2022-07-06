@@ -4,7 +4,6 @@ import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.addShutdownHook
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
@@ -41,7 +40,7 @@ import kotlinx.coroutines.job
  * ```
  */
 context(scope@CoroutineScope)
-  suspend fun ApplicationEngine.awaitShutdown(
+suspend fun ApplicationEngine.awaitShutdown(
   prewait: Duration = 30.seconds,
   grace: Duration = 1.seconds,
   timeout: Duration = 5.seconds,
