@@ -1,5 +1,6 @@
 package alerts.kafka
 
+import alerts.domain.SubscriptionEvent
 import alerts.env.Env
 import alerts.persistence.Repository
 import arrow.fx.coroutines.Resource
@@ -19,6 +20,9 @@ data class SubscriptionKey(val repository: Repository)
 
 @Serializable
 @AvroNamespace("alerts.domain.subscription")
+data class SubscriptionEventRecord(val event: SubscriptionEvent)
+
+@Serializable
 enum class SubscriptionEvent {
   Created, Deleted;
 }
@@ -32,7 +36,7 @@ interface SubscriptionProducer {
       val settings = ProducerSettings(
         bootstrapServers = kafka.bootstrapServers,
         keyDeserializer = AvroSerializer(SubscriptionKey.serializer()),
-        valueDeserializer = AvroSerializer(SubscriptionEvent.serializer())
+        valueDeserializer = AvroSerializer(SubscriptionEventRecord.serializer())
       )
       val producer = Resource.fromAutoCloseable { KafkaProducer(settings) }.bind()
       DefaultSubscriptionProducer(producer, kafka.subscriptionTopic)
@@ -41,14 +45,29 @@ interface SubscriptionProducer {
 }
 
 class DefaultSubscriptionProducer(
-  private val producer: KafkaProducer<SubscriptionKey, SubscriptionEvent>,
+  private val producer: KafkaProducer<SubscriptionKey, SubscriptionEventRecord>,
   private val topic: Env.Kafka.Topic,
 ) : SubscriptionProducer {
   override suspend fun publish(repo: Repository): Unit {
-    producer.sendAwait(ProducerRecord(topic.name, SubscriptionKey(repo), SubscriptionEvent.Created))
+    producer.sendAwait(
+      ProducerRecord(
+        topic.name,
+        SubscriptionKey(repo),
+        SubscriptionEventRecord(SubscriptionEvent.Created)
+      )
+    )
+      .also { println(it) }
+    // producer.send(ProducerRecord(topic.name, SubscriptionKey(repo), SubscriptionEventWrapper(SubscriptionEvent.Created))).get()
+    //   .also { println(it) }
   }
   
   override suspend fun delete(repo: Repository) {
-    producer.sendAwait(ProducerRecord(topic.name, SubscriptionKey(repo), SubscriptionEvent.Deleted))
+    producer.sendAwait(
+      ProducerRecord(
+        topic.name,
+        SubscriptionKey(repo),
+        SubscriptionEventRecord(SubscriptionEvent.Deleted)
+      )
+    )
   }
 }
