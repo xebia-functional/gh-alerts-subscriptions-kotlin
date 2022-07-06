@@ -40,7 +40,7 @@ data class Env(
     val eventTopic: Topic = Topic(getenv("EVENT_TOPIC") ?: "events", 1, 1),
     val notificationTopic: Topic = Topic(getenv("NOTIFICATION_TOPIC") ?: "notifications", 1, 1)
   ) {
-    data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Int)
+    data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Short)
 
     val eventConsumerGroupId = "github-event-consumer"
   }

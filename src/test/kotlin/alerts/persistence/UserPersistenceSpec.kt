@@ -13,13 +13,14 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 
 class UserPersistenceSpec : StringSpec({
-  val postgresConfig = PostgreSQLContainer.config()
-  val persistence by resource(sqlDelight(postgresConfig).map {
-    userPersistence(it.usersQueries)
+  val postgres by resource(PostgreSQLContainer.resource())
+  val persistence by resource(arrow.fx.coroutines.continuations.resource {
+    val sqlDelight = sqlDelight(postgres.config()).bind()
+    userPersistence(sqlDelight.usersQueries)
   })
   val slackUserId = SlackUserId("test-user-id")
 
-  afterTest { PostgreSQLContainer.clear() }
+  afterTest { postgres.clear() }
 
   "Insert user" {
     persistence.insertSlackUser(slackUserId).shouldBeRight().slackUserId shouldBe slackUserId

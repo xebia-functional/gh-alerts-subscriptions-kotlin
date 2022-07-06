@@ -32,6 +32,7 @@ allprojects {
 
 repositories {
   mavenCentral()
+  maven(url = "https://packages.confluent.io/maven/")
   // For Kotest Extensions Arrow Fx, remove if 1.1.3 is released
   maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
@@ -80,9 +81,16 @@ dependencies {
   implementation(libs.hikari)
   implementation(libs.postgresql)
   implementation(libs.flyway)
-
+  implementation(libs.klogging)
+  implementation(libs.avro4k)
+  implementation(libs.kotlin.kafka)
+  implementation(libs.kafka.schema.registry)
+  implementation(libs.kafka.avro.serializer)
+  implementation(libs.avro)
+  
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
+  testImplementation(libs.testcontainers.kafka)
   testImplementation(libs.ktor.server.tests)
   testImplementation(libs.bundles.kotest)
 }
