@@ -1,6 +1,5 @@
 package alerts.kafka
 
-import alerts.domain.SubscriptionEvent
 import alerts.env.Env
 import alerts.persistence.Repository
 import arrow.fx.coroutines.Resource
@@ -56,9 +55,6 @@ class DefaultSubscriptionProducer(
         SubscriptionEventRecord(SubscriptionEvent.Created)
       )
     )
-      .also { println(it) }
-    // producer.send(ProducerRecord(topic.name, SubscriptionKey(repo), SubscriptionEventWrapper(SubscriptionEvent.Created))).get()
-    //   .also { println(it) }
   }
   
   override suspend fun delete(repo: Repository) {
