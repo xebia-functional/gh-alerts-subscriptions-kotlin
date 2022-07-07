@@ -2,8 +2,6 @@ package alerts.kafka
 
 import alerts.domain.GithubEvent
 import alerts.domain.SlackNotification
-import alerts.domain.SubscriptionEvent
-import alerts.domain.SubscriptionKey
 import alerts.env.Env
 import alerts.persistence.catch
 import arrow.fx.coroutines.Resource
