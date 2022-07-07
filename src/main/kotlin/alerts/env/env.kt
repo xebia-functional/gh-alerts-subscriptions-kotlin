@@ -1,5 +1,11 @@
 package alerts.env
 
+import alerts.kafka.AvroSerializer
+import alerts.kafka.UnitKey
+import io.github.nomisRev.kafka.AutoOffsetReset
+import io.github.nomisRev.kafka.ConsumerSettings
+import io.github.nomisRev.kafka.ProducerSettings
+import kotlinx.serialization.KSerializer
 import java.lang.System.getenv
 
 private const val PORT: Int = 8080
@@ -11,14 +17,14 @@ data class Env(
   val http: Http = Http(),
   val postgres: Postgres = Postgres(),
   val github: Github = Github(),
-  val kafka: Kafka = Kafka()
+  val kafka: Kafka = Kafka(),
 ) {
-
+  
   data class Http(
     val host: String = getenv("host") ?: "0.0.0.0",
     val port: Int = getenv("PORT")?.toIntOrNull() ?: PORT,
   )
-
+  
   data class Postgres(
     val url: String = getenv("POSTGRES_URL") ?: JDBC_URL,
     val username: String = getenv("POSTGRES_USER") ?: JDBC_USER,
@@ -26,22 +32,48 @@ data class Env(
   ) {
     val driver: String = "org.postgresql.Driver"
   }
-
+  
   data class Github(
     val uri: String = "https://api.github.com",
     // TODO what do we do here if empty? Crash?
-    val token: String? = getenv("GITHUB_TOKEN")
+    val token: String? = getenv("GITHUB_TOKEN"),
   )
-
+  
   data class Kafka(
     val bootstrapServers: String = getenv("BOOTSTRAP_SERVERS") ?: "localhost:9092",
     val schemaRegistryUrl: String = getenv("SCHEMA_REGISTRY_URL") ?: "http://localhost:8081",
     val subscriptionTopic: Topic = Topic(getenv("SUBSCRIPTION_TOPIC") ?: "subscriptions", 1, 1),
     val eventTopic: Topic = Topic(getenv("EVENT_TOPIC") ?: "events", 1, 1),
-    val notificationTopic: Topic = Topic(getenv("NOTIFICATION_TOPIC") ?: "notifications", 1, 1)
+    val notificationTopic: Topic = Topic(getenv("NOTIFICATION_TOPIC") ?: "notifications", 1, 1),
   ) {
     data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Short)
-
+    
     val eventConsumerGroupId = "github-event-consumer"
+    
+    fun <K, V> consumer(
+      keyDeserializer: KSerializer<K>,
+      valueDeserializer: KSerializer<V>,
+    ): ConsumerSettings<K, V> = ConsumerSettings(
+      bootstrapServers = bootstrapServers,
+      groupId = eventConsumerGroupId,
+      autoOffsetReset = AutoOffsetReset.Earliest,
+      keyDeserializer = AvroSerializer(keyDeserializer),
+      valueDeserializer = AvroSerializer(valueDeserializer)
+    )
+    
+    fun <V> consumer(valueDeserializer: KSerializer<V>): ConsumerSettings<UnitKey, V> =
+      consumer(UnitKey.serializer(), valueDeserializer)
+    
+    fun <K, V> producer(
+      keySerializer: KSerializer<K>,
+      valueSerializer: KSerializer<V>,
+    ): ProducerSettings<K, V> = ProducerSettings(
+      bootstrapServers,
+      AvroSerializer(keySerializer),
+      AvroSerializer(valueSerializer)
+    )
+    
+    fun <V> producer(valueDeserializer: KSerializer<V>): ProducerSettings<UnitKey, V> =
+      producer(UnitKey.serializer(), valueDeserializer)
   }
 }

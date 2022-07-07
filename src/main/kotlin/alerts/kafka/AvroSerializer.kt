@@ -2,6 +2,7 @@ package alerts.kafka
 
 import com.github.avrokotlin.avro4k.Avro
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
 
@@ -23,4 +24,10 @@ class AvroSerializer<A>(
   @Suppress("EmptyFunctionBlock")
   override fun close() {
   }
+}
+
+/** Work around for Avro4k */
+@Serializable
+data class UnitKey(val unit: String) {
+  constructor() : this("Unit")
 }

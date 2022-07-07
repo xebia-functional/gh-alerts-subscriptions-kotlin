@@ -1,7 +1,5 @@
 package alerts.kafka
 
-import alerts.domain.GithubEvent
-import alerts.domain.SlackNotification
 import alerts.env.Env
 import alerts.persistence.catch
 import arrow.fx.coroutines.Resource
@@ -17,7 +15,6 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.builtins.serializer
 import mu.KLogger
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
@@ -46,8 +43,8 @@ private class DefaultManageTopic(
 
   override suspend fun initializeTopics(): Unit = withContext(Dispatchers.IO) {
     initializeTopic(config.subscriptionTopic, SubscriptionKey.serializer(), SubscriptionEvent.serializer())
-    initializeTopic(config.eventTopic, Unit.serializer(), GithubEvent.serializer())
-    initializeTopic(config.notificationTopic, Unit.serializer(), SlackNotification.serializer())
+    initializeTopic(config.eventTopic, UnitKey.serializer(), GithubEvent.serializer())
+    initializeTopic(config.notificationTopic, UnitKey.serializer(), SlackNotification.serializer())
   }
 
   private fun Env.Kafka.Topic.toNewTopic(): NewTopic = NewTopic(name, numPartitions, replicationFactor)

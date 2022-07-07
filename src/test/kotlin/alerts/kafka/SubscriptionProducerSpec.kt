@@ -2,13 +2,9 @@ package alerts.kafka
 
 import alerts.KafkaContainer
 import alerts.persistence.Repository
-import io.github.nomisRev.kafka.Admin
-import io.github.nomisRev.kafka.AdminSettings
-import io.github.nomisRev.kafka.AutoOffsetReset
-import io.github.nomisRev.kafka.ConsumerSettings
+import arrow.fx.coroutines.continuations.resource as Resource
 import io.github.nomisRev.kafka.KafkaConsumer
 import io.github.nomisRev.kafka.commitBatchWithin
-import io.github.nomisRev.kafka.createTopic
 import io.github.nomisRev.kafka.kafkaConsumer
 import io.github.nomisRev.kafka.offsets
 import io.github.nomisRev.kafka.component1
@@ -21,33 +17,16 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
-import org.apache.kafka.clients.admin.NewTopic
+import mu.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 
 class SubscriptionProducerSpec : StringSpec({
   val kafka by resource(KafkaContainer.resource())
-  val admin by autoClose(lazy { Admin(AdminSettings(kafka.bootstrapServers)) })
-  val producer by resource(arrow.fx.coroutines.continuations.resource {
+  val producer by resource(Resource {
     SubscriptionProducer.resource(kafka).bind()
   })
   val settings by lazy {
-    ConsumerSettings(
-      kafka.bootstrapServers,
-      keyDeserializer = AvroSerializer(SubscriptionKey.serializer()),
-      valueDeserializer = AvroSerializer(SubscriptionEventRecord.serializer()),
-      groupId = "groupId",
-      autoOffsetReset = AutoOffsetReset.Earliest
-    )
-  }
-  
-  beforeSpec {
-    admin.createTopic(
-      NewTopic(
-        kafka.subscriptionTopic.name,
-        kafka.subscriptionTopic.numPartitions,
-        kafka.subscriptionTopic.replicationFactor
-      )
-    )
+    kafka.consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
   }
   
   val repo = Repository("owner", "name")
