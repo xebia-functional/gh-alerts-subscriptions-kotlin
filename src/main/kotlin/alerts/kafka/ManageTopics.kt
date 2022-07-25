@@ -19,6 +19,7 @@ import mu.KLogger
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
+import org.apache.kafka.common.serialization.VoidSerializer
 
 interface ManageTopics {
   suspend fun initializeTopics(): Unit
@@ -27,7 +28,7 @@ interface ManageTopics {
 fun manageTopics(
   config: Env.Kafka,
   logger: KLogger,
-  registryClientCacheSize: Int = 100
+  registryClientCacheSize: Int = 100,
 ): Resource<ManageTopics> = resource {
   val admin = Resource.fromAutoCloseable { Admin(AdminSettings(config.bootstrapServers)) }.bind()
   val registry = CachedSchemaRegistryClient(config.schemaRegistryUrl, registryClientCacheSize)
@@ -40,36 +41,40 @@ private class DefaultManageTopic(
   val registryClient: SchemaRegistryClient,
   val logger: KLogger,
 ) : ManageTopics {
-
+  
   override suspend fun initializeTopics(): Unit = withContext(Dispatchers.IO) {
-    initializeTopic(config.subscriptionTopic, SubscriptionKey.serializer(), SubscriptionEvent.serializer())
-    initializeTopic(config.eventTopic, UnitKey.serializer(), GithubEvent.serializer())
-    initializeTopic(config.notificationTopic, UnitKey.serializer(), SlackNotification.serializer())
+    createTopicsOrLog(config.subscriptionTopic, config.eventTopic, config.notificationTopic)
+    registerSchema(config.subscriptionTopic, SubscriptionKey.serializer(), SubscriptionEvent.serializer())
+    registerSchema(config.eventTopic, GithubEvent.serializer())
+    registerSchema(config.notificationTopic, SlackNotification.serializer())
   }
-
+  
   private fun Env.Kafka.Topic.toNewTopic(): NewTopic = NewTopic(name, numPartitions, replicationFactor)
-
-  private suspend fun <K, V> initializeTopic(
+  
+  private suspend fun createTopicsOrLog(vararg topics: Env.Kafka.Topic): Unit =
+    topics.forEach { topic ->
+      catch({
+        admin.createTopic(topic.toNewTopic())
+      }) { _: TopicExistsException ->
+        logger.info { "Topic ${topic.name} already exists" }
+      }
+    }
+  
+  private fun <V> registerSchema(
+    topic: Env.Kafka.Topic,
+    valueS: SerializationStrategy<V>,
+  ) {
+    val valueSchema = Avro.default.schema(valueS)
+    registryClient.register("${topic.name}-value", AvroSchema(valueSchema))
+  }
+  
+  private fun <K, V> registerSchema(
     topic: Env.Kafka.Topic,
     keyS: SerializationStrategy<K>,
     valueS: SerializationStrategy<V>,
-  ): Unit {
-    catch({
-      admin.createTopic(topic.toNewTopic())
-    }) { _: TopicExistsException ->
-      logger.info { "Topic ${topic.name} already exists" }
-    }
-    registerSchema(topic.name, keyS, valueS)
-  }
-
-  private fun <K, V> registerSchema(
-    topic: String,
-    keyS: SerializationStrategy<K>,
-    valueS: SerializationStrategy<V>,
-  ): Unit {
+  ) {
     val keySchema = Avro.default.schema(keyS)
-    val valueSchema = Avro.default.schema(valueS)
-    registryClient.register("$topic-key", AvroSchema(keySchema))
-    registryClient.register("$topic-value", AvroSchema(valueSchema))
+    registryClient.register("${topic.name}-key", AvroSchema(keySchema))
+    registerSchema(topic, valueS)
   }
 }

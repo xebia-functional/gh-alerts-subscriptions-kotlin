@@ -9,11 +9,13 @@ import io.github.nomisRev.kafka.kafkaConsumer
 import io.github.nomisRev.kafka.offsets
 import io.github.nomisRev.kafka.component1
 import io.github.nomisRev.kafka.component2
+import io.github.nomisRev.kafka.receiver.KafkaReceiver
 import io.github.nomisRev.kafka.subscribeTo
 import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -33,36 +35,36 @@ class SubscriptionProducerSpec : StringSpec({
   
   "Can publish repo" {
     producer.publish(repo)
-    
-    kafkaConsumer(settings)
-      .subscribeTo(kafka.subscriptionTopic.name)
+    KafkaReceiver(settings)
+      .receive(kafka.subscriptionTopic.name)
       .take(1)
-      .onEach { (key, value) ->
-        value.event shouldBe SubscriptionEvent.Created
-        key.repository shouldBe repo
-      }.commitBatchWithin(settings, 1, 15.seconds)
-      .collect()
+      .onEach { record ->
+        record.value().event shouldBe SubscriptionEvent.Created
+        record.key().repository shouldBe repo
+        record.offset.acknowledge()
+      }.collect()
   }
   
   "Can delete repo" {
     producer.delete(repo)
     
-    kafkaConsumer(settings)
-      .subscribeTo(kafka.subscriptionTopic.name)
+    KafkaReceiver(settings)
+      .receive(kafka.subscriptionTopic.name)
       .take(1)
-      .onEach { (key, value) ->
-        value.event shouldBe SubscriptionEvent.Deleted
-        key.repository shouldBe repo
-      }.commitBatchWithin(settings, 1, 15.seconds)
-      .collect()
+      .onEach { record ->
+        record.value().event shouldBe SubscriptionEvent.Deleted
+        record.key().repository shouldBe repo
+        record.offset.acknowledge()
+      }.collect()
   }
   
   "Can publish and then delete values" {
     producer.publish(repo)
     producer.delete(repo)
     
-    val records = kafkaConsumer(settings)
-      .subscribeTo(kafka.subscriptionTopic.name)
+    val records = KafkaReceiver(settings)
+      .receiveAutoAck(kafka.subscriptionTopic.name)
+      .flatMapConcat { it }
       .take(2)
       .toList()
     
@@ -70,9 +72,5 @@ class SubscriptionProducerSpec : StringSpec({
       repo to SubscriptionEvent.Created,
       repo to SubscriptionEvent.Deleted
     )
-    
-    KafkaConsumer(settings).use { consumer ->
-      consumer.commitSync(records.offsets())
-    }
   }
 })

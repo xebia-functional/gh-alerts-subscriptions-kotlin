@@ -25,9 +25,3 @@ class AvroSerializer<A>(
   override fun close() {
   }
 }
-
-/** Work around for Avro4k */
-@Serializable
-data class UnitKey(val unit: String) {
-  constructor() : this("Unit")
-}

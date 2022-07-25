@@ -1,11 +1,10 @@
 package alerts.env
 
 import alerts.kafka.AvroSerializer
-import alerts.kafka.UnitKey
-import io.github.nomisRev.kafka.AutoOffsetReset
-import io.github.nomisRev.kafka.ConsumerSettings
 import io.github.nomisRev.kafka.ProducerSettings
+import io.github.nomisRev.kafka.receiver.ReceiverSettings
 import kotlinx.serialization.KSerializer
+import org.apache.kafka.common.serialization.VoidSerializer
 import java.lang.System.getenv
 
 private const val PORT: Int = 8080
@@ -53,16 +52,19 @@ data class Env(
     fun <K, V> consumer(
       keyDeserializer: KSerializer<K>,
       valueDeserializer: KSerializer<V>,
-    ): ConsumerSettings<K, V> = ConsumerSettings(
+    ): ReceiverSettings<K, V> = ReceiverSettings(
       bootstrapServers = bootstrapServers,
       groupId = eventConsumerGroupId,
-      autoOffsetReset = AutoOffsetReset.Earliest,
       keyDeserializer = AvroSerializer(keyDeserializer),
       valueDeserializer = AvroSerializer(valueDeserializer)
     )
     
-    fun <V> consumer(valueDeserializer: KSerializer<V>): ConsumerSettings<UnitKey, V> =
-      consumer(UnitKey.serializer(), valueDeserializer)
+    fun <V> consumer(valueDeserializer: KSerializer<V>): ReceiverSettings<Nothing, V> =
+      ReceiverSettings(
+        bootstrapServers = bootstrapServers,
+        groupId = eventConsumerGroupId,
+        valueDeserializer = AvroSerializer(valueDeserializer)
+      )
     
     fun <K, V> producer(
       keySerializer: KSerializer<K>,
@@ -73,7 +75,11 @@ data class Env(
       AvroSerializer(valueSerializer)
     )
     
-    fun <V> producer(valueDeserializer: KSerializer<V>): ProducerSettings<UnitKey, V> =
-      producer(UnitKey.serializer(), valueDeserializer)
+    fun <V> producer(valueSerializer: KSerializer<V>): ProducerSettings<Nothing, V> =
+      ProducerSettings<Void, V>(
+        bootstrapServers,
+        VoidSerializer(),
+        AvroSerializer(valueSerializer)
+      ) as ProducerSettings<Nothing, V>
   }
 }
