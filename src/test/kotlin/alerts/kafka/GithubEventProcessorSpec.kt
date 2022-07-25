@@ -22,7 +22,7 @@ class GithubEventProcessorSpec : StringSpec({
   val eventProducerSetting by lazy { kafka.producer(GithubEvent.serializer()) }
   val notificationSettings by lazy { kafka.consumer(SlackNotification.serializer()) }
   
-  "All received events are processed and send to the event topic" {
+  "All received events are processed and sent to the notification topic" {
     val events = listOf(
       GithubEvent("arrow-kt/arrow"),
       GithubEvent("arrow-kt/arrow-analysis")
