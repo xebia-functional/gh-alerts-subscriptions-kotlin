@@ -9,6 +9,7 @@ import arrow.fx.coroutines.Schedule
 import arrow.fx.coroutines.fromAutoCloseable
 import arrow.fx.coroutines.retry
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
@@ -28,7 +29,7 @@ interface GithubClient {
       config: Env.Github,
       retryPolicy: Schedule<Throwable, Unit> = defaultPolicy,
     ): Resource<GithubClient> = resource {
-      val client = Resource.fromAutoCloseable { HttpClient() }.bind()
+      val client = Resource.fromAutoCloseable { HttpClient { install(HttpCache) } }.bind()
       val logger = KotlinLogging.logger { }
       DefaultGithubClient(config, retryPolicy, client, logger)
     }
