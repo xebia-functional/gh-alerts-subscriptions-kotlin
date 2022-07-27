@@ -17,7 +17,7 @@ class Subscriptions(
       ?.let { user -> subscriptions.findAll(user.userId) }.orEmpty()
   
   suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription) {
-    val user = users.findOrInsertSlackUser(slackUserId)
+    val user = users.insertSlackUser(slackUserId)
     subscriptions.subscribe(user.userId, subscription)
     producer.publish(subscription.repository)
   }

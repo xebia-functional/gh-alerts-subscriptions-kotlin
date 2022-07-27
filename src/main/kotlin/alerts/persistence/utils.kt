@@ -10,9 +10,6 @@ import org.postgresql.util.PSQLState
 fun PSQLException.isForeignKeyViolation(): Boolean =
   sqlState == PSQLState.FOREIGN_KEY_VIOLATION.state
 
-fun PSQLException.isUniqueViolation(): Boolean =
-  sqlState == PSQLState.UNIQUE_VIOLATION.state
-
 /**
  * Catches a [Throwable], and allows mapping to [E].
  * In the case `null` is returned the original [Throwable] is rethrown,

@@ -1,6 +1,7 @@
 package alerts.persistence
 
 import alerts.PostgreSQLContainer
+import alerts.TestMetrics
 import alerts.env.sqlDelight
 import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.assertions.arrow.core.shouldBeRight
@@ -19,7 +20,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
   val persistence by lazy {
     subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }
-  val users by lazy { userPersistence(sqlDelight.usersQueries) }
+  val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
   
   afterTest { postgres.clear() }
   
@@ -40,7 +41,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     persistence.subscribe(userId, subscriptions).shouldBeRight(Unit)
   }
   
@@ -49,13 +50,13 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrow, LocalDateTime.now()),
     )
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     persistence.subscribe(userId, subscriptions).shouldBeRight(Unit)
   }
   
   "subscribing user to same subscription twice" {
     val subscriptions = listOf(Subscription(arrow, LocalDateTime.now()))
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     persistence.subscribe(userId, subscriptions).shouldBeRight(Unit)
     persistence.subscribe(userId, subscriptions).shouldBeRight(Unit)
   }
@@ -66,7 +67,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
   
   "findSubscribers - multiple" {
     val ids = (0..10).map { num ->
-      users.insertSlackUser(SlackUserId("test-user-$num")).shouldBeRight()
+      users.insertSlackUser(SlackUserId("test-user-$num"))
     }
     ids.forEach { (userId, _) ->
       persistence.subscribe(userId, listOf(Subscription(arrow, LocalDateTime.now()))).shouldBeRight(Unit)
@@ -79,7 +80,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
   }
   
   "findAll - multiple" {
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     val subs = listOf(
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())
@@ -89,17 +90,17 @@ class SubscriptionsPersistenceSpec : StringSpec({
   }
   
   "unsubscribe - emptyList" {
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     persistence.unsubscribe(userId, emptyList()).shouldBe(Unit)
   }
   
   "unsubscribe - non-existent" {
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     persistence.unsubscribe(userId, listOf(Repository("Empty", "empty"))).shouldBe(Unit)
   }
   
   "unsubscribe - removes from database" {
-    val (userId, _) = users.insertSlackUser(SlackUserId("test-user")).shouldBeRight()
+    val (userId, _) = users.insertSlackUser(SlackUserId("test-user"))
     val subs = listOf(
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())

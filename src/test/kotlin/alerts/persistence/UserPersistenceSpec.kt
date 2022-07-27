@@ -1,10 +1,9 @@
 package alerts.persistence
 
 import alerts.PostgreSQLContainer
+import alerts.TestMetrics
 import alerts.env.sqlDelight
 import arrow.core.nonEmptyListOf
-import io.kotest.assertions.arrow.core.shouldBeLeft
-import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -17,18 +16,18 @@ class UserPersistenceSpec : StringSpec({
   val postgres by resource(PostgreSQLContainer.resource())
   val persistence by resource(arrow.fx.coroutines.continuations.resource {
     val sqlDelight = sqlDelight(postgres.config()).bind()
-    userPersistence(sqlDelight.usersQueries)
+    userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
   })
   
   afterTest { postgres.clear() }
   
   "Insert user" {
-    persistence.insertSlackUser(slackUserId).shouldBeRight().slackUserId shouldBe slackUserId
+    persistence.insertSlackUser(slackUserId).slackUserId shouldBe slackUserId
   }
   
-  "Insert user twice fails" {
-    persistence.insertSlackUser(slackUserId)
-    persistence.insertSlackUser(slackUserId).shouldBeLeft(UserAlreadyExists(slackUserId))
+  "Insert user twice doesn't fails but is idempotent" {
+    val user = persistence.insertSlackUser(slackUserId)
+    persistence.insertSlackUser(slackUserId) shouldBe user
   }
   
   "find non-existing user results in null" {
@@ -36,7 +35,7 @@ class UserPersistenceSpec : StringSpec({
   }
   
   "find existing user" {
-    val user = persistence.insertSlackUser(slackUserId).shouldBeRight()
+    val user = persistence.insertSlackUser(slackUserId)
     persistence.find(user.userId).shouldNotBeNull() shouldBe user
   }
   
@@ -45,7 +44,7 @@ class UserPersistenceSpec : StringSpec({
   }
   
   "findSlackUser existing user" {
-    val user = persistence.insertSlackUser(slackUserId).shouldBeRight()
+    val user = persistence.insertSlackUser(slackUserId)
     persistence.findSlackUser(slackUserId).shouldNotBeNull() shouldBe user
   }
   
@@ -56,11 +55,26 @@ class UserPersistenceSpec : StringSpec({
   
   "findUsers existing users" {
     val users = nonEmptyListOf(
-      persistence.insertSlackUser(slackUserId).shouldBeRight(),
-      persistence.insertSlackUser(SlackUserId("test-user-id-2")).shouldBeRight(),
-      persistence.insertSlackUser(SlackUserId("test-user-id-3")).shouldBeRight(),
+      persistence.insertSlackUser(slackUserId),
+      persistence.insertSlackUser(SlackUserId("test-user-id-2")),
+      persistence.insertSlackUser(SlackUserId("test-user-id-3")),
     )
     val ids = users.map { it.userId }
     persistence.findUsers(ids) shouldBe users
+  }
+  
+  "Increment counter on new user" {
+    val original = TestMetrics.slackUsersCounter.get()
+    persistence.insertSlackUser(slackUserId)
+    TestMetrics.slackUsersCounter.get() shouldBe original + 1
+  }
+  
+  "Doesn't increment counter for existing user" {
+    val original = TestMetrics.slackUsersCounter.get()
+    persistence.insertSlackUser(slackUserId)
+    val now = TestMetrics.slackUsersCounter.get()
+    now shouldBe original + 1
+    persistence.insertSlackUser(slackUserId)
+    TestMetrics.slackUsersCounter.get() shouldBe now
   }
 })
