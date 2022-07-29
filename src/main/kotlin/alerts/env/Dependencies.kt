@@ -8,7 +8,6 @@ import alerts.persistence.subscriptionsPersistence
 import alerts.persistence.userPersistence
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
-import mu.KotlinLogging
 
 class Dependencies(
   val notifications: Notifications,
@@ -25,7 +24,7 @@ class Dependencies(
       val subscriptions = Subscriptions(subscriptionsPersistence, users, producer)
       
       Dependencies(
-        Notifications(users, subscriptionsPersistence, githubEventProcessor, KotlinLogging.logger { }),
+        Notifications(users, subscriptionsPersistence, githubEventProcessor),
         subscriptions
       )
     }

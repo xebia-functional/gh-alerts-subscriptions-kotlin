@@ -17,18 +17,15 @@ import arrow.optics.Optional
 import io.github.nomisrev.JsonPath
 import io.github.nomisrev.path
 import io.github.nomisrev.string
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import mu.KLogger
-import kotlin.coroutines.CoroutineContext
+import mu.KotlinLogging
 
 private sealed interface NotificationError
 private data class MalformedJson(
@@ -43,15 +40,14 @@ class Notifications(
   private val users: UserPersistence,
   private val service: SubscriptionsPersistence,
   private val processor: GithubEventProcessor,
-  private val logger: KLogger,
 ) {
   private val fullNamePath: Optional<JsonElement, String> = JsonPath.path("repository.full_name.string").string
+  private val logger = KotlinLogging.logger { }
   
-  fun processor(context: CoroutineContext = Dispatchers.IO): Resource<Job> = resource {
-    val scope = Resource.coroutineScope(context).bind()
+  fun process(): Resource<Job> = resource {
+    val scope = Resource.coroutineScope(Dispatchers.IO).bind()
     processor.process { event ->
       findSubscribers(event).fold({ error ->
-        // We currently simply log errors for failures
         error.log()
         emptyFlow()
       }, List<SlackNotification>::asFlow)
