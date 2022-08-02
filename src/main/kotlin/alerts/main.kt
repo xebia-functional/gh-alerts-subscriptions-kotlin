@@ -13,11 +13,10 @@ fun main(): Unit = SuspendApp {
   val env = Env()
   resource {
     val dependencies = Dependencies.resource(env).bind()
-    server(Netty, port = env.http.port, host = env.http.host) {
-      routing {
-        healthRoute()
-      }
-    }.bind()
     dependencies.notifications.process().bind()
+    val engine = server(Netty, port = env.http.port, host = env.http.host).bind()
+    engine.application.routing {
+      healthRoute()
+    }
   }.use { awaitCancellation() }
 }

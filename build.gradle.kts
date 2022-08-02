@@ -1,6 +1,5 @@
 import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.incremental.updateIncrementalCache
 
 @Suppress("DSL_SCOPE_VIOLATION") plugins {
   application
@@ -75,7 +74,7 @@ tasks {
 
 dependencies {
   implementation(libs.bundles.arrow)
-  implementation("io.arrow-kt:suspendapp:0.1.1-alpha.5")
+  implementation(libs.suspendapp)
   implementation(libs.bundles.ktor.server)
   implementation(libs.bundles.ktor.client)
   implementation(libs.logback.classic)
