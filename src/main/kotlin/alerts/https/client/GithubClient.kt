@@ -21,7 +21,7 @@ import kotlin.time.ExperimentalTime
 @JvmInline
 value class GithubError(val statusCode: HttpStatusCode)
 
-interface GithubClient {
+fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
   
   companion object {

@@ -1,5 +1,6 @@
 package alerts.env
 
+import alerts.https.client.GithubClient
 import alerts.kafka.SubscriptionProducer
 import alerts.kafka.githubEventProcessor
 import alerts.persistence.subscriptionsPersistence
@@ -34,9 +35,10 @@ class Dependencies(
         subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
       val githubEventProcessor = githubEventProcessor(env.kafka)
       val producer = SubscriptionProducer.resource(env.kafka).bind()
+      val client = GithubClient.resource(env.github).bind()
       Dependencies(
         NotificationService(users, subscriptionsPersistence, githubEventProcessor),
-        SubscriptionService(subscriptionsPersistence, users, producer),
+        SubscriptionService(subscriptionsPersistence, users, producer, client),
         appMicrometerRegistry
       )
     }
