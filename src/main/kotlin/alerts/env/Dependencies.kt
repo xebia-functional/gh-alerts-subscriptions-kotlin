@@ -34,11 +34,9 @@ class Dependencies(
         subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
       val githubEventProcessor = githubEventProcessor(env.kafka)
       val producer = SubscriptionProducer.resource(env.kafka).bind()
-      val subscriptions = Subscriptions(subscriptionsPersistence, users, producer)
-      
       Dependencies(
         Notifications(users, subscriptionsPersistence, githubEventProcessor),
-        subscriptions,
+        Subscriptions(subscriptionsPersistence, users, producer),
         appMicrometerRegistry
       )
     }
