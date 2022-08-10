@@ -3,9 +3,9 @@ package alerts
 import alerts.env.Dependencies
 import alerts.env.Env
 import alerts.routes.healthRoute
+import alerts.routes.metricsRoute
 import arrow.continuations.SuspendApp
 import arrow.fx.coroutines.continuations.resource
-import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.Netty
@@ -25,9 +25,7 @@ fun main(): Unit = SuspendApp {
     }
     engine.application.routing {
       healthRoute()
-      get("/metrics") {
-        call.respond(dependencies.metrics.scrape())
-      }
+      metricsRoute(dependencies.metrics)
     }
   }.use { awaitCancellation() }
 }
