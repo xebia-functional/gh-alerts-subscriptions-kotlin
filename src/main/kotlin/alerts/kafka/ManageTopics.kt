@@ -3,7 +3,7 @@ package alerts.kafka
 import alerts.env.Env
 import alerts.persistence.catch
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.fromAutoCloseable
 import com.github.avrokotlin.avro4k.Avro
 import io.github.nomisRev.kafka.Admin
@@ -19,20 +19,19 @@ import mu.KLogger
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
-import org.apache.kafka.common.serialization.VoidSerializer
 
 interface ManageTopics {
   suspend fun initializeTopics(): Unit
 }
 
-fun manageTopics(
+suspend fun ResourceScope.manageTopics(
   config: Env.Kafka,
   logger: KLogger,
   registryClientCacheSize: Int = 100,
-): Resource<ManageTopics> = resource {
+): ManageTopics {
   val admin = Resource.fromAutoCloseable { Admin(AdminSettings(config.bootstrapServers)) }.bind()
   val registry = CachedSchemaRegistryClient(config.schemaRegistryUrl, registryClientCacheSize)
-  DefaultManageTopic(config, admin, registry, logger)
+  return DefaultManageTopic(config, admin, registry, logger)
 }
 
 private class DefaultManageTopic(

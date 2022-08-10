@@ -2,7 +2,9 @@ package alerts
 
 import alerts.env.Env
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.fromAutoCloseable
 import arrow.fx.coroutines.release
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible

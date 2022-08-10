@@ -2,9 +2,9 @@ package alerts.kafka
 
 import alerts.KafkaContainer
 import alerts.persistence.SlackUserId
+import alerts.resource
 import io.github.nomisRev.kafka.produce
 import io.github.nomisRev.kafka.receiver.KafkaReceiver
-import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.asFlow
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.toList
 import org.apache.kafka.clients.producer.ProducerRecord
 
 class GithubEventProcessorSpec : StringSpec({
-  val kafka by resource(KafkaContainer.resource())
+  val kafka by resource { KafkaContainer() }
   val processor by lazy { githubEventProcessor(kafka) }
   val eventProducerSetting by lazy { kafka.producer(GithubEvent.serializer()) }
   val notificationSettings by lazy { kafka.consumer(SlackNotification.serializer()) }

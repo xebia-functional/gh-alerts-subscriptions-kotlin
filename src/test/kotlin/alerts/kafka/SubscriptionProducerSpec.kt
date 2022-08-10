@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 
 class SubscriptionProducerSpec : StringSpec({
-  val kafka by resource { KafkaContainer.resource().bind() }
+  val kafka by resource { KafkaContainer() }
   val producer by resource { SubscriptionProducer(kafka) }
   val settings by lazy {
     kafka.consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())

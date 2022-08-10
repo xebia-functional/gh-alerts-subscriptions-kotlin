@@ -18,8 +18,7 @@ class Dependencies(
   val metrics: PrometheusMeterRegistry,
 )
 
-context(ResourceScope)
-suspend fun Dependencies(env: Env): Dependencies {
+suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
   val sqlDelight = sqlDelight(env.postgres)
   val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
   

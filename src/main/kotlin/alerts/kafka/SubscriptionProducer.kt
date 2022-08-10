@@ -26,8 +26,7 @@ enum class SubscriptionEvent {
   Created, Deleted;
 }
 
-context(ResourceScope)
-suspend fun SubscriptionProducer(kafka: Env.Kafka): SubscriptionProducer {
+suspend fun ResourceScope.SubscriptionProducer(kafka: Env.Kafka): SubscriptionProducer {
   val settings = kafka.producer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
   val producer = Resource.fromAutoCloseable { KafkaProducer(settings) }.bind()
   return DefaultSubscriptionProducer(producer, kafka.subscriptionTopic)

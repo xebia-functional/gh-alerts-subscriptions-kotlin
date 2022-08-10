@@ -1,6 +1,5 @@
 package alerts.env
 
-import alerts.closeable
 import alerts.persistence.RepositoryId
 import alerts.persistence.SlackUserId
 import alerts.persistence.UserId
@@ -12,17 +11,14 @@ import app.cash.sqldelight.ColumnAdapter
 import app.cash.sqldelight.driver.jdbc.asJdbcDriver
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
-import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.fromCloseable
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
-import javax.sql.DataSource
 
-context(ResourceScope)
-suspend fun sqlDelight(env: Env.Postgres): SqlDelight {
+suspend fun ResourceScope.sqlDelight(env: Env.Postgres): SqlDelight {
   val dataSource = hikari(env)
-  val driver = closeable(dataSource::asJdbcDriver)
+  val driver = Resource.fromCloseable(dataSource::asJdbcDriver).bind()
   Flyway.configure().dataSource(dataSource).load().migrate()
   return SqlDelight(
     driver,
@@ -32,17 +28,17 @@ suspend fun sqlDelight(env: Env.Postgres): SqlDelight {
   )
 }
 
-context(ResourceScope)
-private suspend fun hikari(env: Env.Postgres): HikariDataSource = closeable {
-  HikariDataSource(
-    HikariConfig().apply {
-      jdbcUrl = env.url
-      username = env.username
-      password = env.password
-      driverClassName = env.driver
-    }
-  )
-}
+private suspend fun ResourceScope.hikari(env: Env.Postgres): HikariDataSource =
+  Resource.fromCloseable {
+    HikariDataSource(
+      HikariConfig().apply {
+        jdbcUrl = env.url
+        username = env.username
+        password = env.password
+        driverClassName = env.driver
+      }
+    )
+  }.bind()
 
 private val repositoryIdAdapter = columnAdapter(::RepositoryId, RepositoryId::serial)
 private val userIdAdapter = columnAdapter(::UserId, UserId::serial)

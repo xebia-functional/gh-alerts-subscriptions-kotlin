@@ -1,10 +1,10 @@
 package alerts.kafka
 
 import alerts.KafkaContainer
+import alerts.resource
 import io.github.nomisRev.kafka.Admin
 import io.github.nomisRev.kafka.AdminSettings
 import io.github.nomisRev.kafka.await
-import io.kotest.assertions.arrow.fx.coroutines.resource
 import arrow.fx.coroutines.continuations.resource as Resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainAll
@@ -13,9 +13,9 @@ import mu.KotlinLogging
 
 class ManageTopicsSpec : StringSpec({
   val logger = KotlinLogging.logger { }
-  val kafka by resource(KafkaContainer.resource())
+  val kafka by resource { KafkaContainer() }
   val admin by autoClose(lazy { Admin(AdminSettings(kafka.bootstrapServers)) })
-  val manageTopics by resource(Resource { manageTopics(kafka, logger).bind() })
+  val manageTopics by resource { manageTopics(kafka, logger) }
   
   "manageTopics creates topics" {
     val topics = setOf(kafka.subscriptionTopic.name, kafka.eventTopic.name, kafka.notificationTopic.name)

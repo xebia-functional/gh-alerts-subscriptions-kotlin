@@ -35,7 +35,7 @@ import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
-  val kafka by resource { KafkaContainer.resource().bind() }
+  val kafka by resource { KafkaContainer() }
   val postgres by resource { PostgreSQLContainer.resource().bind() }
   val sqlDelight by resource { sqlDelight(postgres.config()) }
   val producer by resource { SubscriptionProducer(kafka) }
