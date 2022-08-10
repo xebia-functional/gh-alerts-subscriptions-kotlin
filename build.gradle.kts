@@ -1,6 +1,5 @@
 import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.incremental.updateIncrementalCache
 
 @Suppress("DSL_SCOPE_VIOLATION") plugins {
   application
@@ -75,7 +74,9 @@ tasks {
 
 dependencies {
   implementation(libs.bundles.arrow)
+  implementation(libs.suspendapp)
   implementation(libs.bundles.ktor.server)
+  implementation(libs.bundles.ktor.client)
   implementation(libs.logback.classic)
   implementation(libs.sqldelight.jdbc)
   implementation(libs.hikari)
@@ -87,6 +88,7 @@ dependencies {
   implementation(libs.kafka.schema.registry)
   implementation(libs.kafka.avro.serializer)
   implementation(libs.avro)
+  implementation(libs.kotlinx.serialization.jsonpath)
   
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)

@@ -1,21 +1,22 @@
 package alerts
 
+import alerts.env.Dependencies
 import alerts.env.Env
-import alerts.env.sqlDelight
 import alerts.routes.healthRoute
-import io.ktor.server.engine.embeddedServer
+import arrow.continuations.SuspendApp
+import arrow.fx.coroutines.continuations.resource
 import io.ktor.server.netty.Netty
 import io.ktor.server.routing.routing
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.awaitCancellation
 
-fun main(): Unit = runBlocking(Dispatchers.Default) {
+fun main(): Unit = SuspendApp {
   val env = Env()
-  sqlDelight(env.postgres).use {
-    embeddedServer(Netty, host = env.http.host, port = env.http.port) {
-      routing {
-        healthRoute()
-      }
-    }.awaitShutdown()
-  }
+  resource {
+    val dependencies = Dependencies.resource(env).bind()
+    dependencies.notifications.process().bind()
+    val engine = server(Netty, port = env.http.port, host = env.http.host).bind()
+    engine.application.routing {
+      healthRoute()
+    }
+  }.use { awaitCancellation() }
 }
