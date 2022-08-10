@@ -1,7 +1,6 @@
 package alerts
 
 import alerts.env.Env
-import alerts.kafka.manageTopics
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.parZip
