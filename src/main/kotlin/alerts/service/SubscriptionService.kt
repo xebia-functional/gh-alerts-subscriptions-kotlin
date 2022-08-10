@@ -1,4 +1,4 @@
-package alerts.programs
+package alerts.service
 
 import alerts.kafka.SubscriptionProducer
 import alerts.persistence.Repository
@@ -7,22 +7,34 @@ import alerts.persistence.Subscription
 import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.UserPersistence
 
-class Subscriptions(
+interface SubscriptionService {
+  suspend fun findAll(slackUserId: SlackUserId): List<Subscription>
+  suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription)
+  suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository)
+}
+
+fun SubscriptionService(
+  subscriptions: SubscriptionsPersistence,
+  users: UserPersistence,
+  producer: SubscriptionProducer,
+): SubscriptionService = Subscriptions(subscriptions, users, producer)
+
+private class Subscriptions(
   private val subscriptions: SubscriptionsPersistence,
   private val users: UserPersistence,
   private val producer: SubscriptionProducer,
-) {
-  suspend fun findAll(slackUserId: SlackUserId): List<Subscription> =
+) : SubscriptionService {
+  override suspend fun findAll(slackUserId: SlackUserId): List<Subscription> =
     users.findSlackUser(slackUserId)
       ?.let { user -> subscriptions.findAll(user.userId) }.orEmpty()
   
-  suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription) {
+  override suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription) {
     val user = users.insertSlackUser(slackUserId)
     subscriptions.subscribe(user.userId, subscription)
     producer.publish(subscription.repository)
   }
   
-  suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository) {
+  override suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository) {
     users.findSlackUser(slackUserId)?.let { user ->
       subscriptions.unsubscribe(user.userId, repository)
       deleteSubscription(repository)
