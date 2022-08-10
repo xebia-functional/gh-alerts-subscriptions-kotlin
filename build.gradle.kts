@@ -89,6 +89,7 @@ dependencies {
   implementation(libs.kafka.avro.serializer)
   implementation(libs.avro)
   implementation(libs.kotlinx.serialization.jsonpath)
+  implementation(libs.micrometer.prometheus)
   
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
