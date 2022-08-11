@@ -14,6 +14,7 @@ import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import com.github.avrokotlin.avro4k.schema.schemaFor
+import guru.zoroark.koa.dsl.OperationBuilder
 import guru.zoroark.koa.ktor.describe
 import guru.zoroark.koa.dsl.schema
 import io.ktor.http.ContentType
@@ -53,6 +54,7 @@ fun Routing.subscriptionRoutes(
         Subscriptions(subscriptions)
       }.respond()
     } describe {
+      slackUserId()
       OK.value response ContentType.Application.Json.contentType { schema(subscriptionsExample) }
       BadRequest.value response { }
     }
@@ -65,6 +67,8 @@ fun Routing.subscriptionRoutes(
           .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
       }.respond(Created)
     } describe {
+      slackUserId()
+      repository()
       OK.value response { }
       BadRequest.value response ContentType.Application.Json.contentType {
         schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo")))
@@ -78,6 +82,8 @@ fun Routing.subscriptionRoutes(
         service.unsubscribe(slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
       }.respond(NoContent)
     } describe {
+      slackUserId()
+      repository()
       NoContent.value response {
         description = "Deleted the subscription for the given user."
       }
@@ -97,5 +103,11 @@ private fun SubscriptionError.toJson(): String =
   Json.encodeToString(SubscriptionError.serializer(), this)
 
 context(EffectScope<OutgoingContent>)
-  private suspend fun ApplicationCall.slackUserId(): SlackUserId =
+private suspend fun ApplicationCall.slackUserId(): SlackUserId =
   SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
+
+private fun OperationBuilder.repository(): Unit =
+  "repository" requestBody { schema(Repository("arrow-kt", "arrow")) }
+
+private fun OperationBuilder.slackUserId(): Unit =
+  "slackUserId" queryParameter { schema("slackUserId") }
