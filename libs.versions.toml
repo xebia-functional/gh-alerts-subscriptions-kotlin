@@ -21,6 +21,7 @@ kotlin-logging = "2.1.20"
 avro4k = "1.6.0"
 kotlin-kafka = "0.3.0"
 kotlinx-serialization-jsonpath = "0.1.0"
+kotlinx-datetime = "0.4.0"
 kafka = "7.1.1"
 avro = "1.11.0"
 prometheus = "1.9.2"
@@ -38,6 +39,7 @@ kotest-runnerJUnit5 = { module = "io.kotest:kotest-runner-junit5", version.ref =
 kotest-arrow = { module = "io.kotest.extensions:kotest-assertions-arrow", version.ref = "kotest-arrow" }
 kotest-arrow-fx = { module = "io.kotest.extensions:kotest-assertions-arrow-fx-coroutines", version.ref = "kotest-arrow" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
 ktor-server-defaultheaders = { module = "io.ktor:ktor-server-default-headers", version.ref = "ktor" }
@@ -46,7 +48,8 @@ ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor"
 ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
 ktor-server-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer", version.ref = "ktor" }
 ktor-client = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
-ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 detekt-gradle = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
@@ -61,6 +64,7 @@ klogging = { module = "io.github.microutils:kotlin-logging", version.ref = "kotl
 avro4k = { module = "com.github.avro-kotlin.avro4k:avro4k-core", version.ref = "avro4k" }
 kotlin-kafka = { module = "io.github.nomisrev:kotlin-kafka", version.ref = "kotlin-kafka" }
 kotlinx-serialization-jsonpath = { module = "io.github.nomisrev:kotlinx-serialization-jsonpath", version.ref = "kotlinx-serialization-jsonpath" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kafka-schema-registry = { module = "io.confluent:kafka-schema-registry-client", version.ref = "kafka" }
 kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "kafka" }
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
@@ -69,12 +73,16 @@ micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus
 [bundles]
 arrow = ["arrow-core", "arrow-fx"]
 ktor-client = [
-    "ktor-client"
+    "ktor-client",
+    "ktor-client-content-negotiation",
+    "ktor-client-serialization"
 ]
 ktor-server = [
     "ktor-server-core",
     "ktor-server-cors",
     "ktor-server-defaultheaders",
+    "ktor-server-content-negotiation",
+    "ktor-serialization",
     "ktor-server-netty",
     "ktor-server-auth",
     "ktor-server-micrometer"

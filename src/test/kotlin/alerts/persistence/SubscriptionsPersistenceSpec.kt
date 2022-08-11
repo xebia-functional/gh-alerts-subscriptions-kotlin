@@ -9,7 +9,10 @@ import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
-import java.time.LocalDateTime
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class SubscriptionsPersistenceSpec : StringSpec({
   
@@ -111,3 +114,6 @@ class SubscriptionsPersistenceSpec : StringSpec({
     persistence.findAll(userId).shouldBeEmpty()
   }
 })
+
+private fun LocalDateTime.Companion.now(): LocalDateTime =
+  Clock.System.now().toLocalDateTime(TimeZone.UTC)

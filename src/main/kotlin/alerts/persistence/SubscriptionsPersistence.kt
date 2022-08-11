@@ -7,9 +7,11 @@ import arrow.core.left
 import arrow.core.right
 import arrow.core.traverse
 import com.github.avrokotlin.avro4k.AvroNamespace
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.serialization.Serializable
 import org.postgresql.util.PSQLException
-import java.time.LocalDateTime
 
 @JvmInline
 value class RepositoryId(val serial: Long)
@@ -18,6 +20,7 @@ value class RepositoryId(val serial: Long)
 @AvroNamespace("alerts.domain.repository")
 data class Repository(val owner: String, val name: String)
 
+@Serializable
 data class Subscription(val repository: Repository, val subscribedAt: LocalDateTime)
 
 data class UserNotFound(val userId: UserId)
@@ -41,7 +44,7 @@ fun subscriptionsPersistence(
 ): SubscriptionsPersistence = object : SubscriptionsPersistence {
   override suspend fun findAll(user: UserId): List<Subscription> =
     subscriptions.findAll(user) { owner, repository, subscribedAt ->
-      Subscription(Repository(owner, repository), subscribedAt)
+      Subscription(Repository(owner, repository), subscribedAt.toKotlinLocalDateTime())
     }.executeAsList()
   
   override suspend fun findSubscribers(repository: Repository): List<UserId> =
@@ -56,7 +59,7 @@ fun subscriptionsPersistence(
           ).executeAsOne()
         
         catch({
-          subscriptions.insert(user, repoId, subscribedAt)
+          subscriptions.insert(user, repoId, subscribedAt.toJavaLocalDateTime())
         }) { error: PSQLException ->
           if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
           else throw error

@@ -1,4 +1,4 @@
-package alerts.routes
+package alerts.https.routes
 
 import io.ktor.server.application.call
 import io.ktor.server.response.respond

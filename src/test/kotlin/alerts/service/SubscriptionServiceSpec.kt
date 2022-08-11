@@ -29,8 +29,10 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
-import java.time.LocalDateTime
 
 class SubscriptionServiceSpec : StringSpec({
   val kafka by resource(KafkaContainer.resource())
@@ -46,7 +48,7 @@ class SubscriptionServiceSpec : StringSpec({
   afterTest { postgres.clear() }
   
   val slackUserId = SlackUserId("test-user-id")
-  val subscription = Subscription(Repository("arrow-kt", "arrow"), LocalDateTime.now())
+  val subscription = Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))
   
   "If repo exists, and repo has no subscribers then event is send to Kafka" {
     users.insertSlackUser(slackUserId)

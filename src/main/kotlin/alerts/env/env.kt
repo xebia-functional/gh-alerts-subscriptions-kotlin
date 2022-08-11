@@ -47,7 +47,7 @@ data class Env(
   ) {
     data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Short)
     
-    val eventConsumerGroupId = "github-event-consumer"
+    private val eventConsumerGroupId = "github-event-consumer"
     
     fun <K, V> consumer(
       keyDeserializer: KSerializer<K>,
@@ -75,6 +75,7 @@ data class Env(
       AvroSerializer(valueSerializer)
     )
     
+    @Suppress("UNCHECKED_CAST")
     fun <V> producer(valueSerializer: KSerializer<V>): ProducerSettings<Nothing, V> =
       ProducerSettings<Void, V>(
         bootstrapServers,
