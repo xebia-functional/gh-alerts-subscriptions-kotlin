@@ -15,14 +15,12 @@ import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.Parameters
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
-import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
-import io.ktor.server.routing.routing
 import io.ktor.util.pipeline.PipelineContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
