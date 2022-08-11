@@ -38,27 +38,27 @@ class SubscriptionSpec : StringSpec({
       routing { subscriptionRoutes(service) }
     }, test)
   
-  "GET /subscription/42 returns status code 200" {
+  "GET /subscription?slackUserId=42 returns status code 200" {
     subscriptions {
-      get("/subscription/42").status
+      get("/subscription?slackUserId=42").status
     } shouldBe OK
   }
   
-  "GET /subscription/42 returns emtpy list" {
+  "GET /subscription?slackUserId=42 returns emtpy list" {
     subscriptions {
-      get("/subscription/42").bodyAsText()
+      get("/subscription?slackUserId=42").bodyAsText()
     } shouldBe "{\"subscriptions\":[]}"
   }
   
-  "POST /subscription/42 returns status code 201" {
+  "POST /subscription?slackUserId=42 returns status code 201" {
     subscriptions {
-      post("/subscription/42") { testRepo() }.status
+      post("/subscription?slackUserId=42") { testRepo() }.status
     } shouldBe Created
   }
   
-  "DELETE /subscription/42 returns status code 204" {
+  "DELETE /subscription?slackUserId=42 returns status code 204" {
     subscriptions {
-      delete("/subscription/42") { testRepo() }.status
+      delete("/subscription?slackUserId=42") { testRepo() }.status
     } shouldBe NoContent
   }
 })

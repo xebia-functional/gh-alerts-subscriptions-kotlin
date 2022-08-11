@@ -5,6 +5,8 @@ import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.service.SubscriptionService
 import arrow.core.Either
+import arrow.core.continuations.Effect
+import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import io.ktor.http.HttpStatusCode
@@ -36,10 +38,10 @@ fun Routing.subscriptionRoutes(
   clock: Clock = Clock.System,
   timeZone: TimeZone = TimeZone.UTC,
 ) =
-  route("subscription/{slackUserId}") { // TODO change this to query param?
+  route("subscription") {
     get {
       either {
-        val slackUserId = SlackUserId(ensureNotNull(call.parameters["slackUserId"]) { BadRequest })
+        val slackUserId = call.slackUserId()
         val subscriptions = service.findAll(slackUserId).mapLeft { BadRequest }.bind()
         Subscriptions(subscriptions)
       }.respond()
@@ -47,7 +49,7 @@ fun Routing.subscriptionRoutes(
     
     post {
       either {
-        val slackUserId = SlackUserId(ensureNotNull(call.parameters["slackUserId"]) { BadRequest })
+        val slackUserId = call.slackUserId()
         val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { BadRequest }
         service.subscribe(slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
           .mapLeft { BadRequest }.bind()
@@ -56,15 +58,19 @@ fun Routing.subscriptionRoutes(
     
     delete {
       either {
-        val slackUserId = SlackUserId(ensureNotNull(call.parameters["slackUserId"]) { BadRequest })
+        val slackUserId = call.slackUserId()
         val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { BadRequest }
         service.unsubscribe(slackUserId, repository).mapLeft { NotFound }.bind()
       }.respond(NoContent)
     }
   }
 
+context(EffectScope<HttpStatusCode>)
+private suspend fun ApplicationCall.slackUserId(): SlackUserId =
+  SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { BadRequest })
+
 context(PipelineContext<Unit, ApplicationCall>)
-  suspend inline fun <reified A : Any> Either<HttpStatusCode, A>.respond(code: HttpStatusCode = OK): Unit =
+suspend inline fun <reified A : Any> Either<HttpStatusCode, A>.respond(code: HttpStatusCode = OK): Unit =
   when (this) {
     is Either.Left -> call.respond(value)
     is Either.Right -> call.respond(code, value)
