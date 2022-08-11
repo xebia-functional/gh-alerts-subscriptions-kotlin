@@ -16,7 +16,8 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 
-suspend fun ResourceScope.sqlDelight(env: Env.Postgres): SqlDelight {
+context(ResourceScope)
+suspend fun sqlDelight(env: Env.Postgres): SqlDelight {
   val dataSource = hikari(env)
   val driver = Resource.fromCloseable(dataSource::asJdbcDriver).bind()
   Flyway.configure().dataSource(dataSource).load().migrate()
@@ -28,7 +29,8 @@ suspend fun ResourceScope.sqlDelight(env: Env.Postgres): SqlDelight {
   )
 }
 
-private suspend fun ResourceScope.hikari(env: Env.Postgres): HikariDataSource =
+context(ResourceScope)
+private suspend fun hikari(env: Env.Postgres): HikariDataSource =
   Resource.fromCloseable {
     HikariDataSource(
       HikariConfig().apply {

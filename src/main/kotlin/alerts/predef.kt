@@ -14,7 +14,8 @@ import kotlin.coroutines.CoroutineContext
  * Utility to create a [CoroutineScope] as a [Resource].
  * It calls the correct [cancel] overload depending on the [ExitCase].
  */
-suspend fun ResourceScope.coroutineScope(context: CoroutineContext): CoroutineScope =
+context(ResourceScope)
+suspend fun coroutineScope(context: CoroutineContext): CoroutineScope =
   Resource({ CoroutineScope(context) }, { scope, exitCase ->
     when (exitCase) {
       ExitCase.Completed -> scope.cancel()

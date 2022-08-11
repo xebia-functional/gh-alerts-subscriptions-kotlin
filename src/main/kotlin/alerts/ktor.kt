@@ -54,8 +54,9 @@ suspend inline fun <reified A : Any> PipelineContext<Unit, ApplicationCall>.resp
 ): Unit = effect(resolve).fold({ call.respond(it) }) { call.respond(code, it) }
 
 /** https://arrow-kt.github.io/suspendapp/ */
+context(ResourceScope)
 @Suppress("LongParameterList")
-suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> ResourceScope.server(
+suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> server(
   factory: ApplicationEngineFactory<TEngine, TConfiguration>,
   port: Int = 80,
   host: String = "0.0.0.0",
@@ -82,4 +83,3 @@ suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Con
     engine.stop(grace.inWholeMilliseconds, timeout.inWholeMilliseconds)
     engine.environment.log.info("HTTP server shutdown!")
   }).bind()
-

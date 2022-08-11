@@ -1,4 +1,4 @@
-import kotlinx.kover.api.KoverTaskExtension
+// import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 @Suppress("DSL_SCOPE_VIOLATION") plugins {
@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   alias(libs.plugins.sqldelight)
   alias(libs.plugins.jib)
   alias(libs.plugins.kotest.multiplatform)
-  alias(libs.plugins.kover)
+  // alias(libs.plugins.kover)
   id(libs.plugins.detekt.pluginId)
 }
 
@@ -56,16 +56,6 @@ java {
   targetCompatibility = JavaVersion.VERSION_11
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-  kotlinOptions.freeCompilerArgs += listOf(
-    "-Xopt-in=kotlin.RequiresOptIn",
-    "-Xopt-in=kotlin.OptIn",
-    "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-    "-Xopt-in=kotlinx.coroutines.ObsoleteCoroutinesApi",
-    "-Xopt-in=kotlinx.coroutines.FlowPreview"
-  )
-}
-
 tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
@@ -79,10 +69,10 @@ tasks {
   
   test {
     useJUnitPlatform()
-    extensions.configure(KoverTaskExtension::class) {
-      includes = listOf("alerts.*")
-      excludes = listOf("alerts.sqldelight")
-    }
+    // extensions.configure(KoverTaskExtension::class) {
+    //   includes = listOf("alerts.*")
+    //   excludes = listOf("alerts.sqldelight")
+    // }
   }
 }
 

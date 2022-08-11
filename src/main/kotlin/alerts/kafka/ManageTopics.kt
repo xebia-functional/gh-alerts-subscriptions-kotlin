@@ -24,7 +24,8 @@ interface ManageTopics {
   suspend fun initializeTopics(): Unit
 }
 
-suspend fun ResourceScope.manageTopics(
+context(ResourceScope)
+suspend fun manageTopics(
   config: Env.Kafka,
   logger: KLogger,
   registryClientCacheSize: Int = 100,
