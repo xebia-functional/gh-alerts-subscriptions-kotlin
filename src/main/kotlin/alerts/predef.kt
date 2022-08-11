@@ -1,11 +1,18 @@
 package alerts
 
+import arrow.core.Either
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.call
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.ApplicationEngineFactory
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.response.respond
+import io.ktor.util.pipeline.PipelineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -94,3 +101,18 @@ fun Resource.Companion.coroutineScope(context: CoroutineContext): Resource<Corou
     }
     scope.coroutineContext.job.join()
   })
+
+/** Small utility to turn HttpStatusCode into OutgoingContent. */
+fun statusCode(statusCode: HttpStatusCode) = object : OutgoingContent.NoContent() {
+  override val status: HttpStatusCode = statusCode
+}
+
+/** Small utility functions that allows to conveniently respond an `Either` where `Left == OutgoingContent`. */
+context(PipelineContext<Unit, ApplicationCall>)
+suspend inline fun <reified A : Any> Either<OutgoingContent, A>.respond(
+  code: HttpStatusCode = HttpStatusCode.OK,
+): Unit =
+  when (this) {
+    is Either.Left -> call.respond(value)
+    is Either.Right -> call.respond(code, value)
+  }
