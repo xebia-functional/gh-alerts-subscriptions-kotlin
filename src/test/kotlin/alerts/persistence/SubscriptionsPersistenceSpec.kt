@@ -3,9 +3,9 @@ package alerts.persistence
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.sqlDelight
+import alerts.resource
 import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.assertions.arrow.core.shouldBeRight
-import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -16,10 +16,8 @@ import kotlinx.datetime.toLocalDateTime
 
 class SubscriptionsPersistenceSpec : StringSpec({
   
-  val postgres by resource(PostgreSQLContainer.resource())
-  val sqlDelight by resource(arrow.fx.coroutines.continuations.resource {
-    sqlDelight(postgres.config()).bind()
-  })
+  val postgres by resource { PostgreSQLContainer.resource().bind() }
+  val sqlDelight by resource { sqlDelight(postgres.config()) }
   val persistence by lazy {
     subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }

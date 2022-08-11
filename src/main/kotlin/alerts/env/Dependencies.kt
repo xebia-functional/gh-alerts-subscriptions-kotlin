@@ -7,8 +7,7 @@ import alerts.persistence.subscriptionsPersistence
 import alerts.persistence.userPersistence
 import alerts.service.NotificationService
 import alerts.service.SubscriptionService
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import io.prometheus.client.Counter
@@ -17,30 +16,29 @@ class Dependencies(
   val notifications: NotificationService,
   val subscriptions: SubscriptionService,
   val metrics: PrometheusMeterRegistry,
-) {
-  companion object {
-    fun resource(env: Env): Resource<Dependencies> = resource {
-      val sqlDelight = sqlDelight(env.postgres).bind()
-      val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-      
-      val slackUsersCounter: Counter =
-        Counter
-          .build()
-          .name("slack_users_counter")
-          .help("Number of Slack users registered with our service")
-          .register(appMicrometerRegistry.prometheusRegistry)
-      
-      val users = userPersistence(sqlDelight.usersQueries, slackUsersCounter)
-      val subscriptionsPersistence =
-        subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
-      val githubEventProcessor = githubEventProcessor(env.kafka)
-      val producer = SubscriptionProducer.resource(env.kafka).bind()
-      val client = GithubClient.resource(env.github).bind()
-      Dependencies(
-        NotificationService(users, subscriptionsPersistence, githubEventProcessor),
-        SubscriptionService(subscriptionsPersistence, users, producer, client),
-        appMicrometerRegistry
-      )
-    }
-  }
+)
+
+context(ResourceScope)
+suspend fun Dependencies(env: Env): Dependencies {
+  val sqlDelight = sqlDelight(env.postgres)
+  val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+  
+  val slackUsersCounter: Counter =
+    Counter
+      .build()
+      .name("slack_users_counter")
+      .help("Number of Slack users registered with our service")
+      .register(appMicrometerRegistry.prometheusRegistry)
+  
+  val users = userPersistence(sqlDelight.usersQueries, slackUsersCounter)
+  val subscriptionsPersistence =
+    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+  val githubEventProcessor = githubEventProcessor(env.kafka)
+  val producer = SubscriptionProducer(env.kafka)
+  val client = GithubClient.resource(env.github).bind()
+  return Dependencies(
+    NotificationService(users, subscriptionsPersistence, githubEventProcessor),
+    SubscriptionService(subscriptionsPersistence, users, producer, client),
+    appMicrometerRegistry
+  )
 }

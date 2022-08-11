@@ -15,6 +15,7 @@ import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.persistence.subscriptionsPersistence
 import alerts.persistence.userPersistence
+import alerts.resource
 import arrow.core.left
 import arrow.core.right
 import io.github.nomisRev.kafka.Admin
@@ -23,7 +24,6 @@ import io.github.nomisRev.kafka.describeTopic
 import io.github.nomisRev.kafka.receiver.KafkaReceiver
 import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.assertions.arrow.core.shouldBeRight
-import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -35,10 +35,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
-  val kafka by resource(KafkaContainer.resource())
-  val postgres by resource(PostgreSQLContainer.resource())
-  val sqlDelight by resource(sqlDelight(postgres.config()))
-  val producer by resource(SubscriptionProducer.resource(kafka))
+  val kafka by resource { KafkaContainer.resource().bind() }
+  val postgres by resource { PostgreSQLContainer.resource().bind() }
+  val sqlDelight by resource { sqlDelight(postgres.config()) }
+  val producer by resource { SubscriptionProducer(kafka) }
   
   val subscriptions by lazy {
     subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)

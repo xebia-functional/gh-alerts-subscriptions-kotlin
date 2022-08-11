@@ -3,8 +3,8 @@ package alerts.persistence
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.sqlDelight
+import alerts.resource
 import arrow.core.nonEmptyListOf
-import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
@@ -13,11 +13,11 @@ import io.kotest.matchers.shouldBe
 
 class UserPersistenceSpec : StringSpec({
   val slackUserId = SlackUserId("test-user-id")
-  val postgres by resource(PostgreSQLContainer.resource())
-  val persistence by resource(arrow.fx.coroutines.continuations.resource {
-    val sqlDelight = sqlDelight(postgres.config()).bind()
+  val postgres by resource { PostgreSQLContainer.resource().bind() }
+  val persistence by resource {
+    val sqlDelight = sqlDelight(postgres.config())
     userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
-  })
+  }
   
   afterTest { postgres.clear() }
   

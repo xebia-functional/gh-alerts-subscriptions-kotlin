@@ -1,8 +1,12 @@
 package alerts
 
+import arrow.core.identity
 import arrow.core.Either
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.continuations.ResourceScope
+import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.fromCloseable
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.Application
@@ -11,6 +15,7 @@ import io.ktor.server.application.call
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.ApplicationEngineFactory
 import io.ktor.server.engine.embeddedServer
+import io.ktor.utils.io.core.Closeable
 import io.ktor.server.response.respond
 import io.ktor.util.pipeline.PipelineContext
 import kotlin.time.Duration
@@ -59,8 +64,9 @@ import kotlin.coroutines.CoroutineContext
  * // exit (0)
  * ```
  */
+context(ResourceScope)
 @Suppress("LongParameterList")
-fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> server(
+suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> server(
   factory: ApplicationEngineFactory<TEngine, TConfiguration>,
   port: Int = 80,
   host: String = "0.0.0.0",
@@ -69,8 +75,8 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
   grace: Duration = 1.seconds,
   timeout: Duration = 5.seconds,
   module: suspend Application.() -> Unit = {},
-): Resource<ApplicationEngine> =
-  Resource({
+): ApplicationEngine =
+  resource({
     embeddedServer(factory, host = host, port = port, configure = configure) {
     }.apply {
       module(application)
@@ -92,8 +98,9 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
  * Utility to create a [CoroutineScope] as a [Resource].
  * It calls the correct [cancel] overload depending on the [ExitCase].
  */
-fun Resource.Companion.coroutineScope(context: CoroutineContext): Resource<CoroutineScope> =
-  Resource({ CoroutineScope(context) }, { scope, exitCase ->
+context(ResourceScope)
+suspend fun coroutineScope(context: CoroutineContext): CoroutineScope =
+  resource({ CoroutineScope(context) }, { scope, exitCase ->
     when (exitCase) {
       ExitCase.Completed -> scope.cancel()
       is ExitCase.Cancelled -> scope.cancel(exitCase.exception)
@@ -116,3 +123,18 @@ suspend inline fun <reified A : Any> Either<OutgoingContent, A>.respond(
     is Either.Left -> call.respond(value)
     is Either.Right -> call.respond(code, value)
   }
+
+suspend fun <A> resourceScope(
+  action: suspend ResourceScope.() -> A
+): A = resource(action).use(::identity)
+
+context(ResourceScope)
+  suspend fun <A: Closeable> closeable(
+  action: suspend () -> A
+): A = Resource.fromCloseable(action).bind()
+
+context(ResourceScope)
+  suspend fun <A> resource(
+  acquire: suspend () -> A,
+  releaseCase: suspend (A, ExitCase) -> Unit
+): A = Resource(acquire, releaseCase).bind()

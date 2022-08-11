@@ -12,6 +12,7 @@ import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
 import arrow.optics.Optional
 import io.github.nomisrev.JsonPath
@@ -28,7 +29,8 @@ import kotlinx.serialization.json.JsonElement
 import mu.KotlinLogging
 
 fun interface NotificationService {
-  fun process(): Resource<Job>
+  context(ResourceScope)
+  suspend fun process(): Job
 }
 
 fun NotificationService(
@@ -54,15 +56,16 @@ private class Notifications(
   private val fullNamePath: Optional<JsonElement, String> = JsonPath.path("repository.full_name.string").string
   private val logger = KotlinLogging.logger { }
   
-  override fun process(): Resource<Job> = resource {
-    val scope = Resource.coroutineScope(Dispatchers.IO).bind()
+  context(ResourceScope)
+  override suspend fun process(): Job = resource {
+    val scope = coroutineScope(Dispatchers.IO)
     processor.process { event ->
       findSubscribers(event).fold({ error ->
         error.log()
         emptyFlow()
       }, List<SlackNotification>::asFlow)
     }.launchIn(scope)
-  }
+  }.bind()
   
   private suspend fun extractRepo(event: GithubEvent): Either<NotificationError, Repository> =
     either {
