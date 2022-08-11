@@ -20,7 +20,7 @@ fun main(): Unit = SuspendApp {
   val env = Env()
   resource {
     val dependencies = Dependencies.resource(env).bind()
-    // dependencies.notifications.process().bind()
+    dependencies.notifications.process().bind()
     server(Netty, port = env.http.port, host = env.http.host).bind()
       .application.alertsServer(dependencies)
   }.use { awaitCancellation() }

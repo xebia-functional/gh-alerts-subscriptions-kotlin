@@ -83,7 +83,7 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
       engine.environment.log.info(
         "prewait delay of ${preWait.inWholeMilliseconds}ms, turn it off using io.ktor.development=true"
       )
-      // delay(preWait.inWholeMilliseconds)
+      delay(preWait.inWholeMilliseconds)
     }
     engine.environment.log.info("Shutting down HTTP server...")
     engine.stop(grace.inWholeMilliseconds, timeout.inWholeMilliseconds)
