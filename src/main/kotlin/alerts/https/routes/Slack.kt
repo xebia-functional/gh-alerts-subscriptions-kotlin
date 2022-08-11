@@ -3,7 +3,9 @@ package alerts.https.routes
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
+import alerts.respond
 import alerts.service.SubscriptionService
+import alerts.statusCode
 import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
@@ -59,16 +61,3 @@ private suspend fun Parameters.decodeSlashCommand(): Either<TextContent, SlashCo
     val slackUserId = ensureNotNull(get("user_id")?.let(::SlackUserId)) { badRequest("missing user_id") }
     SlashCommand(slackUserId, Command.Subscribe, repo)
   }
-
-context(PipelineContext<Unit, ApplicationCall>)
-  private suspend inline fun <reified A : Any> Either<OutgoingContent, A>.respond(
-  code: HttpStatusCode = HttpStatusCode.OK,
-): Unit =
-  when (this) {
-    is Either.Left -> call.respond(value)
-    is Either.Right -> call.respond(code, value)
-  }
-
-private fun statusCode(statusCode: HttpStatusCode) = object : OutgoingContent.NoContent() {
-  override val status: HttpStatusCode = statusCode
-}

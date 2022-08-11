@@ -3,7 +3,9 @@ package alerts.https.routes
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
+import alerts.respond
 import alerts.service.SubscriptionService
+import alerts.statusCode
 import arrow.core.Either
 import arrow.core.continuations.Effect
 import arrow.core.continuations.EffectScope
@@ -15,6 +17,7 @@ import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NoContent
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
+import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -42,7 +45,7 @@ fun Routing.subscriptionRoutes(
     get {
       either {
         val slackUserId = call.slackUserId()
-        val subscriptions = service.findAll(slackUserId).mapLeft { BadRequest }.bind()
+        val subscriptions = service.findAll(slackUserId).mapLeft { statusCode(BadRequest) }.bind()
         Subscriptions(subscriptions)
       }.respond()
     }
@@ -50,28 +53,21 @@ fun Routing.subscriptionRoutes(
     post {
       either {
         val slackUserId = call.slackUserId()
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { BadRequest }
+        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
         service.subscribe(slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
-          .mapLeft { BadRequest }.bind()
+          .mapLeft { statusCode(BadRequest) }.bind()
       }.respond(Created)
     }
     
     delete {
       either {
         val slackUserId = call.slackUserId()
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { BadRequest }
-        service.unsubscribe(slackUserId, repository).mapLeft { NotFound }.bind()
-      }.respond(NoContent)
+        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
+        service.unsubscribe(slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
+      }.respond()
     }
   }
 
-context(EffectScope<HttpStatusCode>)
+context(EffectScope<OutgoingContent>)
 private suspend fun ApplicationCall.slackUserId(): SlackUserId =
-  SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { BadRequest })
-
-context(PipelineContext<Unit, ApplicationCall>)
-suspend inline fun <reified A : Any> Either<HttpStatusCode, A>.respond(code: HttpStatusCode = OK): Unit =
-  when (this) {
-    is Either.Left -> call.respond(value)
-    is Either.Right -> call.respond(code, value)
-  }
+  SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
