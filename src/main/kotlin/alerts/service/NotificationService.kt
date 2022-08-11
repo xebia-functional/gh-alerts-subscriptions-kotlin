@@ -9,11 +9,10 @@ import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.UserPersistence
 import alerts.persistence.catch
 import arrow.core.Either
+import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
-import arrow.fx.coroutines.continuations.resource
 import arrow.optics.Optional
 import io.github.nomisrev.JsonPath
 import io.github.nomisrev.path
@@ -30,7 +29,7 @@ import mu.KotlinLogging
 
 fun interface NotificationService {
   context(ResourceScope)
-  suspend fun process(): Job
+    suspend fun process(): Job
 }
 
 fun NotificationService(
@@ -57,31 +56,31 @@ private class Notifications(
   private val logger = KotlinLogging.logger { }
   
   context(ResourceScope)
-  override suspend fun process(): Job = resource {
+  override suspend fun process(): Job {
     val scope = coroutineScope(Dispatchers.IO)
-    processor.process { event ->
+    return processor.process { event ->
       findSubscribers(event).fold({ error ->
         error.log()
         emptyFlow()
       }, List<SlackNotification>::asFlow)
     }.launchIn(scope)
-  }.bind()
-  
-  private suspend fun extractRepo(event: GithubEvent): Either<NotificationError, Repository> =
-    either {
-      val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
-        MalformedJson(event.event, error)
-      }.bind()
-      val fullName = ensureNotNull(fullNamePath.getOrNull(json)) { RepoFullNameNotFound(json) }
-      val (owner, name) = ensureNotNull(fullName.split("/").takeIf { it.size == 2 }) { CannotExtractRepo(fullName) }
-      Repository(owner, name)
-    }
+  }
   
   private suspend fun findSubscribers(event: GithubEvent): Either<NotificationError, List<SlackNotification>> = either {
-    val repo = extractRepo(event).bind()
+    val repo = extractRepo(event)
     val userIds = service.findSubscribers(repo)
     val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
     slackUserIds.map { SlackNotification(it, event.event) }
+  }
+  
+  context(EffectScope<NotificationError>)
+  private suspend fun extractRepo(event: GithubEvent): Repository {
+    val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
+      MalformedJson(event.event, error)
+    }.bind()
+    val fullName = ensureNotNull(fullNamePath.getOrNull(json)) { RepoFullNameNotFound(json) }
+    val (owner, name) = ensureNotNull(fullName.split("/").takeIf { it.size == 2 }) { CannotExtractRepo(fullName) }
+    return Repository(owner, name)
   }
   
   private fun NotificationError.log(): Unit =

@@ -25,11 +25,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 
-typealias KtorCtx =
-  PipelineContext<Unit, ApplicationCall>
+typealias KtorCtx = PipelineContext<Unit, ApplicationCall>
+
+typealias StatusCodeError = EffectScope<OutgoingContent>
 
 /** Get slackUserId, or return BadRequest */
-context(EffectScope<OutgoingContent>)
+context(StatusCodeError)
 suspend fun KtorCtx.slackUserId(): SlackUserId =
   SlackUserId(ensureNotNull(call.request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
 
@@ -37,7 +38,7 @@ suspend fun KtorCtx.slackUserId(): SlackUserId =
  * Rethrow `Left` as `HttpStatusCode`.
  * Useful to bail out with a HttpStatusCode with no content
  */
-context(EffectScope<OutgoingContent>)
+context(StatusCodeError)
 suspend fun <A> Either<*, A>.or(code: HttpStatusCode): A =
   mapLeft { statusCode(code) }.bind()
 
@@ -49,9 +50,8 @@ fun statusCode(statusCode: HttpStatusCode) = object : OutgoingContent.NoContent(
 /** Respond with `A` which must be `@Serializable` or shift with OutgoingContent. */
 suspend inline fun <reified A : Any> PipelineContext<Unit, ApplicationCall>.respond(
   code: HttpStatusCode = HttpStatusCode.OK,
-  crossinline resolve: suspend EffectScope<OutgoingContent>.() -> A,
+  crossinline resolve: suspend StatusCodeError.() -> A,
 ): Unit = effect(resolve).fold({ call.respond(it) }) { call.respond(code, it) }
-
 
 /** https://arrow-kt.github.io/suspendapp/ */
 @Suppress("LongParameterList")

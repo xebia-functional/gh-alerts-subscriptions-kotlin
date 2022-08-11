@@ -1,5 +1,6 @@
 package alerts.https.routes
 
+import alerts.StatusCodeError
 import alerts.Time
 import alerts.or
 import alerts.persistence.Repository
@@ -24,6 +25,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.util.pipeline.PipelineContext
@@ -42,7 +44,7 @@ data class SlashCommand(
   val repo: Repository,
 )
 
-fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.SystemUTC) =
+fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.SystemUTC): Route =
   get("/slack/command") {
     respond(Created) {
       val command = call.receiveParameters().decodeSlashCommand()
@@ -51,10 +53,8 @@ fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.SystemUT
     }
   }
 
-context(EffectScope<TextContent>)
-  private suspend fun Parameters.decodeSlashCommand(): SlashCommand {
-  fun badRequest(msg: String) = TextContent(msg, ContentType.Text.Plain, BadRequest)
-  
+context(StatusCodeError)
+private suspend fun Parameters.decodeSlashCommand(): SlashCommand {
   val command = ensureNotNull(get("command")) { badRequest("no command specified") }
   ensure(command == "/subscribe") { badRequest("unknown command: $command") }
   val parts = ensureNotNull(get("text")?.split("/")) { badRequest("missing owner/repository") }
@@ -63,3 +63,6 @@ context(EffectScope<TextContent>)
   val slackUserId = ensureNotNull(get("user_id")?.let(::SlackUserId)) { badRequest("missing user_id") }
   return SlashCommand(slackUserId, Command.Subscribe, repo)
 }
+
+private fun badRequest(msg: String) =
+  TextContent(msg, ContentType.Text.Plain, BadRequest)

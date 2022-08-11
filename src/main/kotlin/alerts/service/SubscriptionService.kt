@@ -48,8 +48,6 @@ private class Subscriptions(
   private val producer: SubscriptionProducer,
   private val client: GithubClient,
 ) : SubscriptionService {
-  private val logger = KotlinLogging.logger { }
-  
   override suspend fun findAll(slackUserId: SlackUserId): Either<UserNotFound, List<Subscription>> =
     either {
       val user = users.findSlackUser(slackUserId)
