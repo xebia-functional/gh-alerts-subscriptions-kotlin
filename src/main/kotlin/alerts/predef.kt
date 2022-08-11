@@ -124,7 +124,7 @@ suspend fun <A> resourceScope(
   action: suspend ResourceScope.() -> A,
 ): A = resource(action).use(::identity)
 
-suspend fun <A> ResourceScope.resource(
+private suspend fun <A> ResourceScope.resource(
   acquire: suspend () -> A,
   releaseCase: suspend (A, ExitCase) -> Unit,
 ): A = Resource(acquire, releaseCase).bind()

@@ -34,7 +34,7 @@ suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
     subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   val githubEventProcessor = githubEventProcessor(env.kafka)
   val producer = SubscriptionProducer(env.kafka)
-  val client = GithubClient.resource(env.github).bind()
+  val client = GithubClient(env.github)
   return Dependencies(
     NotificationService(users, subscriptionsPersistence, githubEventProcessor),
     SubscriptionService(subscriptionsPersistence, users, producer, client),

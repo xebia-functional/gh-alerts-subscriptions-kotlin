@@ -36,7 +36,7 @@ import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
   val kafka by resource { KafkaContainer() }
-  val postgres by resource { PostgreSQLContainer.resource().bind() }
+  val postgres by resource { PostgreSQLContainer() }
   val sqlDelight by resource { sqlDelight(postgres.config()) }
   val producer by resource { SubscriptionProducer(kafka) }
   

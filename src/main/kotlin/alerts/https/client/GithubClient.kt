@@ -6,6 +6,7 @@ import arrow.core.continuations.either
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.Schedule
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.fromAutoCloseable
 import arrow.fx.coroutines.retry
 import io.ktor.client.HttpClient
@@ -23,24 +24,25 @@ value class GithubError(val statusCode: HttpStatusCode)
 
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
-  
-  companion object {
-    fun resource(
-      config: Env.Github,
-      retryPolicy: Schedule<Throwable, Unit> = defaultPolicy,
-    ): Resource<GithubClient> = resource {
-      val client = Resource.fromAutoCloseable { HttpClient { install(HttpCache) } }.bind()
-      val logger = KotlinLogging.logger { }
-      DefaultGithubClient(config, retryPolicy, client, logger)
-    }
-    
-    @OptIn(ExperimentalTime::class)
-    private val defaultPolicy: Schedule<Throwable, Unit> =
-      Schedule.recurs<Throwable>(3)
-        .and(Schedule.exponential(1.seconds))
-        .void()
-  }
 }
+
+
+suspend fun ResourceScope.GithubClient(
+  config: Env.Github,
+  retryPolicy: Schedule<Throwable, Unit> = defaultPolicy
+): GithubClient {
+  val client = Resource.fromAutoCloseable { HttpClient { install(HttpCache) } }.bind()
+  val logger = KotlinLogging.logger { }
+  return DefaultGithubClient(config, retryPolicy, client, logger)
+}
+
+private const val DEFAULT_RETRY_COUNT: Int = 3
+
+@OptIn(ExperimentalTime::class)
+private val defaultPolicy: Schedule<Throwable, Unit> =
+  Schedule.recurs<Throwable>(DEFAULT_RETRY_COUNT)
+    .and(Schedule.exponential(1.seconds))
+    .void()
 
 private class DefaultGithubClient(
   private val config: Env.Github,

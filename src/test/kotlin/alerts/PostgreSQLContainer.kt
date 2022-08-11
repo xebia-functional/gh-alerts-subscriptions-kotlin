@@ -11,6 +11,17 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import org.testcontainers.containers.wait.strategy.Wait
 
+suspend fun ResourceScope.PostgreSQLContainer(): PostgreSQLContainer =
+  Resource({
+    withContext(Dispatchers.IO) {
+      PostgreSQLContainer()
+        .waitingFor(Wait.forListeningPort())
+        .also { container -> runInterruptible(block = container::start) }
+    }
+  }) { container, _ ->
+    withContext(Dispatchers.IO) { container.close() }
+  }.bind()
+
 class PostgreSQLContainer private constructor() :
   org.testcontainers.containers.PostgreSQLContainer<PostgreSQLContainer>("postgres:14.1-alpine") {
   
@@ -21,20 +32,6 @@ class PostgreSQLContainer private constructor() :
     createConnection("").use { conn ->
       conn.prepareStatement("TRUNCATE users CASCADE").use {
         it.executeLargeUpdate()
-      }
-    }
-  }
-  
-  companion object {
-    fun resource(): Resource<PostgreSQLContainer> = resource {
-      withContext(Dispatchers.IO) {
-        PostgreSQLContainer()
-          .waitingFor(Wait.forListeningPort())
-          .also { container -> runInterruptible(block = container::start) }
-      }
-    } release { postgres ->
-      withContext(Dispatchers.IO) {
-        postgres.close()
       }
     }
   }

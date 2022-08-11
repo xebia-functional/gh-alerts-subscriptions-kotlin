@@ -16,7 +16,6 @@ import org.testcontainers.utility.DockerImageName
 import java.lang.System.getProperty
 
 /** A KafkaContainer that is set up in the same as docker-compose.yml */
-
 suspend fun ResourceScope.KafkaContainer(): Env.Kafka {
   val network = Network.newNetwork()
   return parZip(
