@@ -3,8 +3,10 @@ package alerts
 import arrow.core.Either
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.content.TextContent
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
@@ -81,7 +83,7 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
       engine.environment.log.info(
         "prewait delay of ${preWait.inWholeMilliseconds}ms, turn it off using io.ktor.development=true"
       )
-      delay(preWait.inWholeMilliseconds)
+      // delay(preWait.inWholeMilliseconds)
     }
     engine.environment.log.info("Shutting down HTTP server...")
     engine.stop(grace.inWholeMilliseconds, timeout.inWholeMilliseconds)
@@ -106,6 +108,9 @@ fun Resource.Companion.coroutineScope(context: CoroutineContext): Resource<Corou
 fun statusCode(statusCode: HttpStatusCode) = object : OutgoingContent.NoContent() {
   override val status: HttpStatusCode = statusCode
 }
+
+fun badRequest(content: String, contentType: ContentType = ContentType.Text.Plain) =
+  TextContent(content, contentType, HttpStatusCode.BadRequest)
 
 /** Small utility functions that allows to conveniently respond an `Either` where `Left == OutgoingContent`. */
 context(PipelineContext<Unit, ApplicationCall>)
