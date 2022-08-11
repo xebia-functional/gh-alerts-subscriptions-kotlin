@@ -90,6 +90,7 @@ dependencies {
   implementation(libs.avro)
   implementation(libs.kotlinx.serialization.jsonpath)
   implementation(libs.micrometer.prometheus)
+  implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
   
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
