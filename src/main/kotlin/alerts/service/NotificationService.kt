@@ -1,4 +1,4 @@
-package alerts.programs
+package alerts.service
 
 import alerts.coroutineScope
 import alerts.kafka.GithubEvent
@@ -27,24 +27,34 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import mu.KotlinLogging
 
-private sealed interface NotificationError
-private data class MalformedJson(
-  val json: String,
-  val exception: SerializationException,
-) : NotificationError
+fun interface NotificationService {
+  fun process(): Resource<Job>
+}
 
-private data class RepoFullNameNotFound(val json: JsonElement) : NotificationError
-private data class CannotExtractRepo(val fullName: String) : NotificationError
+fun NotificationService(
+  users: UserPersistence,
+  service: SubscriptionsPersistence,
+  processor: GithubEventProcessor,
+): NotificationService = Notifications(users, service, processor)
 
-class Notifications(
+private class Notifications(
   private val users: UserPersistence,
   private val service: SubscriptionsPersistence,
   private val processor: GithubEventProcessor,
-) {
+) : NotificationService {
+  private sealed interface NotificationError
+  private data class MalformedJson(
+    val json: String,
+    val exception: SerializationException,
+  ) : NotificationError
+  
+  private data class RepoFullNameNotFound(val json: JsonElement) : NotificationError
+  private data class CannotExtractRepo(val fullName: String) : NotificationError
+  
   private val fullNamePath: Optional<JsonElement, String> = JsonPath.path("repository.full_name.string").string
   private val logger = KotlinLogging.logger { }
   
-  fun process(): Resource<Job> = resource {
+  override fun process(): Resource<Job> = resource {
     val scope = Resource.coroutineScope(Dispatchers.IO).bind()
     processor.process { event ->
       findSubscribers(event).fold({ error ->

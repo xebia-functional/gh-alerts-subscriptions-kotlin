@@ -57,7 +57,10 @@ fun subscriptionsPersistence(
         
         catch({
           subscriptions.insert(user, repoId, subscribedAt)
-        }) { error: PSQLException -> if (error.isUserIdForeignKeyViolation()) UserNotFound(user) else throw error }
+        }) { error: PSQLException ->
+          if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
+          else throw error
+        }
       }.fold({ rollback(it.left()) }, { Unit.right() })
     }
   
