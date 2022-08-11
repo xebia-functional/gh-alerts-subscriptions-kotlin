@@ -20,13 +20,13 @@ interface SubscriptionService {
   
   /**
    * Subscribes to the provided [Subscription], only if the [Repository] exists.
-   * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is send.
+   * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is sent.
    */
   suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription): Either<SubscriptionError, Unit>
   
   /**
    * Unsubscribes the repo. No-op if the [slackUserId] was not subscribed to the repo.
-   * If the [Repository] has no more subscriptions a [SubscriptionEvent.Deleted] event is send.
+   * If the [Repository] has no more subscriptions a [SubscriptionEvent.Deleted] event is sent.
    */
   suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository): Either<UserNotFound, Unit>
 }
@@ -74,7 +74,6 @@ private class Subscriptions(
       subscriptions.subscribe(user.userId, subscription)
         .mapLeft { UserNotFound(slackUserId, it.userId) }.bind()
       
-      logger.info { "hasSubscribers: $hasSubscribers => " }
       if (!hasSubscribers) {
         producer.publish(subscription.repository)
       }

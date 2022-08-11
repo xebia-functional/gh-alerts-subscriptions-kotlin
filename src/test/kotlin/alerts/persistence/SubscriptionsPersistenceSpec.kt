@@ -19,7 +19,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
   val postgres by resource { PostgreSQLContainer() }
   val sqlDelight by resource { sqlDelight(postgres.config()) }
   val persistence by lazy {
-    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+    SubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }
   val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
   

@@ -13,7 +13,7 @@ import alerts.kafka.SubscriptionProducer
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
-import alerts.persistence.subscriptionsPersistence
+import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.userPersistence
 import alerts.resource
 import arrow.core.left
@@ -41,7 +41,7 @@ class SubscriptionServiceSpec : StringSpec({
   val producer by resource { SubscriptionProducer(kafka) }
   
   val subscriptions by lazy {
-    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+    SubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }
   val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
   

@@ -1,36 +1,30 @@
 package alerts.https.routes
 
+import alerts.Time
+import alerts.or
 import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.respond
 import alerts.service.SubscriptionService
+import alerts.slackUserId
 import alerts.statusCode
 import arrow.core.Either
-import arrow.core.continuations.Effect
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
-import arrow.core.continuations.ensureNotNull
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NoContent
 import io.ktor.http.HttpStatusCode.Companion.NotFound
-import io.ktor.http.HttpStatusCode.Companion.OK
 import io.ktor.http.content.OutgoingContent
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
-import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import io.ktor.util.pipeline.PipelineContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -38,36 +32,30 @@ data class Subscriptions(val subscriptions: List<Subscription>)
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
-  clock: Clock = Clock.System,
-  timeZone: TimeZone = TimeZone.UTC,
-) =
+  time: Time = Time.SystemUTC
+): Route =
   route("subscription") {
     get {
-      either {
-        val slackUserId = call.slackUserId()
-        val subscriptions = service.findAll(slackUserId).mapLeft { statusCode(BadRequest) }.bind()
+      respond {
+        val slackUserId = slackUserId()
+        val subscriptions = service.findAll(slackUserId).or(BadRequest)
         Subscriptions(subscriptions)
-      }.respond()
+      }
     }
     
     post {
-      either {
-        val slackUserId = call.slackUserId()
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
-        service.subscribe(slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
-          .mapLeft { statusCode(BadRequest) }.bind()
-      }.respond(Created)
+      respond(Created) {
+        val slackUserId = slackUserId()
+        val repository = Either.catch<Repository> { call.receive() }.or(BadRequest)
+        service.subscribe(slackUserId, Subscription(repository, time.now())).or(BadRequest)
+      }
     }
     
     delete {
-      either {
-        val slackUserId = call.slackUserId()
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
-        service.unsubscribe(slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
-      }.respond(NoContent)
+      respond(NoContent) {
+        val slackUserId = slackUserId()
+        val repository = Either.catch<Repository> { call.receive() }.or(BadRequest)
+        service.unsubscribe(slackUserId, repository).or(NotFound)
+      }
     }
   }
-
-context(EffectScope<OutgoingContent>)
-private suspend fun ApplicationCall.slackUserId(): SlackUserId =
-  SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { statusCode(BadRequest) })

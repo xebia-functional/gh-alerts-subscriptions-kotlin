@@ -38,7 +38,7 @@ interface SubscriptionsPersistence {
     unsubscribe(user, listOf(repositories))
 }
 
-fun subscriptionsPersistence(
+fun SubscriptionsPersistence(
   subscriptions: SubscriptionsQueries,
   repositories: RepositoriesQueries,
 ): SubscriptionsPersistence = object : SubscriptionsPersistence {

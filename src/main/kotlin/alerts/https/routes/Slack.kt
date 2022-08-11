@@ -1,5 +1,7 @@
 package alerts.https.routes
 
+import alerts.Time
+import alerts.or
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
@@ -7,6 +9,7 @@ import alerts.respond
 import alerts.service.SubscriptionService
 import alerts.statusCode
 import arrow.core.Either
+import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import io.ktor.http.ContentType
@@ -39,25 +42,24 @@ data class SlashCommand(
   val repo: Repository,
 )
 
-fun Routing.slackRoutes(service: SubscriptionService) =
+fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.SystemUTC) =
   get("/slack/command") {
-    either {
-      val command = call.receiveParameters().decodeSlashCommand().bind()
+    respond(Created) {
+      val command = call.receiveParameters().decodeSlashCommand()
       ensure(command.command == Command.Subscribe) { statusCode(InternalServerError) }
-      service.subscribe(command.userId, Subscription(command.repo, Clock.System.now().toLocalDateTime(TimeZone.UTC)))
-        .mapLeft { statusCode(BadRequest) }.bind()
-    }.respond(Created)
+      service.subscribe(command.userId, Subscription(command.repo, time.now())).or(BadRequest)
+    }
   }
 
-private suspend fun Parameters.decodeSlashCommand(): Either<TextContent, SlashCommand> =
-  either {
-    fun badRequest(msg: String) = TextContent(msg, ContentType.Text.Plain, BadRequest)
-    
-    val command = ensureNotNull(get("command")) { badRequest("no command specified") }
-    ensure(command == "/subscribe") { badRequest("unknown command: $command") }
-    val parts = ensureNotNull(get("text")?.split("/")) { badRequest("missing owner/repository") }
-    ensure(parts.size == 2) { badRequest("missing owner/repository") }
-    val repo = Repository(parts[0], parts[1])
-    val slackUserId = ensureNotNull(get("user_id")?.let(::SlackUserId)) { badRequest("missing user_id") }
-    SlashCommand(slackUserId, Command.Subscribe, repo)
-  }
+context(EffectScope<TextContent>)
+  private suspend fun Parameters.decodeSlashCommand(): SlashCommand {
+  fun badRequest(msg: String) = TextContent(msg, ContentType.Text.Plain, BadRequest)
+  
+  val command = ensureNotNull(get("command")) { badRequest("no command specified") }
+  ensure(command == "/subscribe") { badRequest("unknown command: $command") }
+  val parts = ensureNotNull(get("text")?.split("/")) { badRequest("missing owner/repository") }
+  ensure(parts.size == 2) { badRequest("missing owner/repository") }
+  val repo = Repository(parts[0], parts[1])
+  val slackUserId = ensureNotNull(get("user_id")?.let(::SlackUserId)) { badRequest("missing user_id") }
+  return SlashCommand(slackUserId, Command.Subscribe, repo)
+}

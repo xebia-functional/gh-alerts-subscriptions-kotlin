@@ -4,7 +4,6 @@ import alerts.env.Env
 import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.Schedule
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.fromAutoCloseable
@@ -26,8 +25,8 @@ fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
 }
 
-
-suspend fun ResourceScope.GithubClient(
+context(ResourceScope)
+suspend fun GithubClient(
   config: Env.Github,
   retryPolicy: Schedule<Throwable, Unit> = defaultPolicy
 ): GithubClient {

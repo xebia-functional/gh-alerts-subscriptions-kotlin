@@ -18,7 +18,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 class GithubEventProcessorSpec : StringSpec({
   val kafka by resource { KafkaContainer() }
-  val processor by lazy { githubEventProcessor(kafka) }
+  val processor by lazy { GithubEventProcessor(kafka) }
   val eventProducerSetting by lazy { kafka.producer(GithubEvent.serializer()) }
   val notificationSettings by lazy { kafka.consumer(SlackNotification.serializer()) }
   

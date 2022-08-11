@@ -2,8 +2,8 @@ package alerts.env
 
 import alerts.https.client.GithubClient
 import alerts.kafka.SubscriptionProducer
-import alerts.kafka.githubEventProcessor
-import alerts.persistence.subscriptionsPersistence
+import alerts.kafka.GithubEventProcessor
+import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.userPersistence
 import alerts.service.NotificationService
 import alerts.service.SubscriptionService
@@ -31,8 +31,8 @@ suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
   
   val users = userPersistence(sqlDelight.usersQueries, slackUsersCounter)
   val subscriptionsPersistence =
-    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
-  val githubEventProcessor = githubEventProcessor(env.kafka)
+    SubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+  val githubEventProcessor = GithubEventProcessor(env.kafka)
   val producer = SubscriptionProducer(env.kafka)
   val client = GithubClient(env.github)
   return Dependencies(
