@@ -3,6 +3,7 @@ package alerts
 import alerts.env.Dependencies
 import alerts.https.routes.healthRoute
 import alerts.https.routes.metricsRoute
+import alerts.https.routes.slackRoutes
 import alerts.https.routes.subscriptionRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -41,7 +42,8 @@ private fun Application.metrics(dependencies: Dependencies) {
 private fun Application.routes(dependencies: Dependencies): Routing =
   routing {
     healthRoute()
-    subscriptionRoutes(dependencies.subscriptions)
     metricsRoute(dependencies.metrics)
+    subscriptionRoutes(dependencies.subscriptions)
+    slackRoutes(dependencies.subscriptions)
   }
 
