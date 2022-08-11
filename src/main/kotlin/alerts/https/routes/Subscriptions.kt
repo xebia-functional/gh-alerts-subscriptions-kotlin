@@ -64,7 +64,7 @@ fun Routing.subscriptionRoutes(
         val slackUserId = call.slackUserId()
         val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
         service.unsubscribe(slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
-      }.respond()
+      }.respond(NoContent)
     }
   }
 
