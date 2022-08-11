@@ -34,6 +34,7 @@ repositories {
   maven(url = "https://packages.confluent.io/maven/")
   // For Kotest Extensions Arrow Fx, remove if 1.1.3 is released
   maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
+  maven(url = "https://jitpack.io")
 }
 
 jib {
@@ -103,7 +104,7 @@ dependencies {
   implementation(libs.avro)
   implementation(libs.kotlinx.serialization.jsonpath)
   implementation(libs.micrometer.prometheus)
-  implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+  implementation(libs.kotlinx.datetime)
   
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
