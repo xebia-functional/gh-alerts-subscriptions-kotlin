@@ -28,9 +28,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 
-@JvmInline
 @Serializable
-value class Subscriptions(val subscriptions: List<Subscription>)
+data class Subscriptions(val subscriptions: List<Subscription>)
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,

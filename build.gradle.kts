@@ -55,14 +55,27 @@ java {
   targetCompatibility = JavaVersion.VERSION_11
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+  kotlinOptions.freeCompilerArgs += listOf(
+    "-Xopt-in=kotlin.RequiresOptIn",
+    "-Xopt-in=kotlin.OptIn",
+    "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+    "-Xopt-in=kotlinx.coroutines.ObsoleteCoroutinesApi",
+    "-Xopt-in=kotlinx.coroutines.FlowPreview"
+  )
+}
+
 tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
       jvmTarget = "${JavaVersion.VERSION_11}"
-      freeCompilerArgs = freeCompilerArgs + "-Xcontext-receivers" + "-opt-in=kotlin.RequiresOptIn"
+      freeCompilerArgs = freeCompilerArgs + listOf(
+        "-Xcontext-receivers",
+        "-opt-in=kotlinx.coroutines.FlowPreview"
+      )
     }
   }
-
+  
   test {
     useJUnitPlatform()
     extensions.configure(KoverTaskExtension::class) {
