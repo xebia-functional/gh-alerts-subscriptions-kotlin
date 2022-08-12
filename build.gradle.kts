@@ -1,4 +1,4 @@
-// import kotlinx.kover.api.KoverTaskExtension
+import kotlinx.kover.api.KoverTaskExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 @Suppress("DSL_SCOPE_VIOLATION") plugins {
