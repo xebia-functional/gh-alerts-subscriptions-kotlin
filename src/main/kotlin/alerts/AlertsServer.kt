@@ -46,4 +46,3 @@ private fun Application.routes(dependencies: Dependencies): Routing =
     subscriptionRoutes(dependencies.subscriptions)
     slackRoutes(dependencies.subscriptions)
   }
-

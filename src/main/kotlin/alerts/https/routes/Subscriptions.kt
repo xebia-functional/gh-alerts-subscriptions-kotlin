@@ -7,16 +7,11 @@ import alerts.persistence.Subscription
 import alerts.respond
 import alerts.service.SubscriptionService
 import alerts.slackUserId
-import alerts.statusCode
 import arrow.core.Either
-import arrow.core.continuations.EffectScope
-import arrow.core.continuations.either
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NoContent
 import io.ktor.http.HttpStatusCode.Companion.NotFound
-import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.routing.Route
@@ -32,7 +27,7 @@ data class Subscriptions(val subscriptions: List<Subscription>)
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
-  time: Time = Time.SystemUTC
+  time: Time = Time.UTC
 ): Route =
   route("subscription") {
     get {

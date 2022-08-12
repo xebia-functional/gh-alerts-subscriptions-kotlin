@@ -48,7 +48,7 @@ fun statusCode(statusCode: HttpStatusCode) = object : OutgoingContent.NoContent(
 }
 
 /** Respond with `A` which must be `@Serializable` or shift with OutgoingContent. */
-suspend inline fun <reified A : Any> PipelineContext<Unit, ApplicationCall>.respond(
+suspend inline fun <reified A : Any> KtorCtx.respond(
   code: HttpStatusCode = HttpStatusCode.OK,
   crossinline resolve: suspend StatusCodeError.() -> A,
 ): Unit = effect(resolve).fold({ call.respond(it) }) { call.respond(code, it) }
