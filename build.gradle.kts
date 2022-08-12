@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   alias(libs.plugins.sqldelight)
   alias(libs.plugins.jib)
   alias(libs.plugins.kotest.multiplatform)
-  // alias(libs.plugins.kover)
+  alias(libs.plugins.kover)
   id(libs.plugins.detekt.pluginId)
 }
 
@@ -69,10 +69,10 @@ tasks {
   
   test {
     useJUnitPlatform()
-    // extensions.configure(KoverTaskExtension::class) {
-    //   includes = listOf("alerts.*")
-    //   excludes = listOf("alerts.sqldelight")
-    // }
+    extensions.configure(KoverTaskExtension::class) {
+      includes = listOf("alerts.*")
+      excludes = listOf("alerts.sqldelight")
+    }
   }
 }
 
