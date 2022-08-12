@@ -1,6 +1,7 @@
 package alerts.service
 
 import alerts.https.client.GithubClient
+import alerts.https.client.GithubError
 import alerts.kafka.SubscriptionProducer
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
@@ -9,31 +10,38 @@ import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.UserId
 import alerts.persistence.UserPersistence
 import arrow.core.Either
+import arrow.core.continuations.Effect
+import arrow.core.continuations.EffectScope
+import arrow.core.continuations.effect
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import io.ktor.http.HttpStatusCode
-import mu.KotlinLogging
+
+typealias MissingRepo = EffectScope<RepoNotFound>
+data class RepoNotFound(val repository: Repository)
+
+typealias MissingSlackUser = EffectScope<SlackUserNotFound>
+data class SlackUserNotFound(val slackUserId: SlackUserId)
 
 interface SubscriptionService {
   /** Returns all subscriptions for the given [slackUserId], empty if none found */
-  suspend fun findAll(slackUserId: SlackUserId): Either<UserNotFound, List<Subscription>>
+  context(MissingSlackUser)
+  suspend fun findAll(slackUserId: SlackUserId): List<Subscription>
   
   /**
    * Subscribes to the provided [Subscription], only if the [Repository] exists.
    * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is sent.
    */
-  suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription): Either<SubscriptionError, Unit>
+  context(MissingRepo, MissingSlackUser)
+  suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription)
   
   /**
    * Unsubscribes the repo. No-op if the [slackUserId] was not subscribed to the repo.
    * If the [Repository] has no more subscriptions a [SubscriptionEvent.Deleted] event is sent.
    */
-  suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository): Either<UserNotFound, Unit>
+  context(MissingSlackUser)
+  suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository)
 }
-
-sealed interface SubscriptionError
-data class RepoNotFound(val repository: Repository, val statusCode: HttpStatusCode? = null) : SubscriptionError
-data class UserNotFound(val slackUserId: SlackUserId, val user: UserId? = null) : SubscriptionError
 
 fun SubscriptionService(
   subscriptions: SubscriptionsPersistence,
@@ -48,40 +56,28 @@ private class Subscriptions(
   private val producer: SubscriptionProducer,
   private val client: GithubClient,
 ) : SubscriptionService {
-  override suspend fun findAll(slackUserId: SlackUserId): Either<UserNotFound, List<Subscription>> =
-    either {
-      val user = users.findSlackUser(slackUserId)
-      ensureNotNull(user) { UserNotFound(slackUserId) }
-      subscriptions.findAll(user.userId)
-    }
+  context(MissingSlackUser)
+  override suspend fun findAll(slackUserId: SlackUserId): List<Subscription> {
+    val user = users.findSlackUser(slackUserId)
+    ensureNotNull(user) { SlackUserNotFound(slackUserId) }
+    return subscriptions.findAll(user)
+  }
   
-  override suspend fun subscribe(
-    slackUserId: SlackUserId,
-    subscription: Subscription,
-  ): Either<SubscriptionError, Unit> =
-    either {
-      val user = users.insertSlackUser(slackUserId)
-      
-      val exists = client.repositoryExists(subscription.repository.owner, subscription.repository.name)
-        .mapLeft { RepoNotFound(subscription.repository, it.statusCode) }.bind()
-      
-      ensure(exists) { RepoNotFound(subscription.repository) }
-      
-      val hasSubscribers = subscriptions.findSubscribers(subscription.repository).isNotEmpty()
-      
-      subscriptions.subscribe(user.userId, subscription)
-        .mapLeft { UserNotFound(slackUserId, it.userId) }.bind()
-      
-      if (!hasSubscribers) {
-        producer.publish(subscription.repository)
-      }
-    }
+  context(EffectScope<GithubError>, MissingRepo)
+  override suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription) {
+    val user = users.insertSlackUser(slackUserId)
+    val exists = client.repositoryExists(subscription.repository.owner, subscription.repository.name).bind()
+    ensure(exists) { RepoNotFound(subscription.repository) }
+    val hasSubscribers = subscriptions.findSubscribers(subscription.repository).isNotEmpty()
+    subscriptions.subscribe(user, subscription)
+    return if (!hasSubscribers) producer.publish(subscription.repository) else Unit
+  }
   
-  override suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository): Either<UserNotFound, Unit> =
-    either {
-      val user = ensureNotNull(users.findSlackUser(slackUserId)) { UserNotFound(slackUserId) }
-      subscriptions.unsubscribe(user.userId, repository)
-      val subscribers = subscriptions.findSubscribers(repository)
-      if (subscribers.isEmpty()) producer.delete(repository)
-    }
+  context(MissingSlackUser)
+  override suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository) {
+    val user = ensureNotNull(users.findSlackUser(slackUserId)) { SlackUserNotFound(slackUserId) }
+    subscriptions.unsubscribe(user, repository)
+    val subscribers = subscriptions.findSubscribers(repository)
+    return if (subscribers.isEmpty()) producer.delete(repository) else Unit
+  }
 }

@@ -38,7 +38,7 @@ fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.UTC): Ro
     respond(Created) {
       val command = call.receiveParameters().decodeSlashCommand()
       ensure(command.command == Command.Subscribe) { statusCode(InternalServerError) }
-      service.subscribe(command.userId, Subscription(command.repo, time.now())).or(BadRequest)
+      service.subscribe(command.userId, Subscription(command.repo, time.now()))
     }
   }
 

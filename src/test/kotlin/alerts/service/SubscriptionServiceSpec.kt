@@ -16,6 +16,7 @@ import alerts.persistence.Subscription
 import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.userPersistence
 import alerts.resource
+import arrow.core.continuations.either
 import arrow.core.left
 import arrow.core.right
 import io.github.nomisRev.kafka.Admin
@@ -54,7 +55,11 @@ class SubscriptionServiceSpec : StringSpec({
     users.insertSlackUser(slackUserId)
     val service = SubscriptionService(subscriptions, users, producer) { _, _ -> true.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeRight(Unit)
+    /**
+     * We can satisfy `context(MissingRepo, MissingSlackUser)` using `context(EffectScope<Any>)`.
+     * Returning Either<Any, Unit>, and we can assert the result.
+     */
+    either { service.subscribe(slackUserId, subscription) }.shouldBeRight(Unit)
     
     val record = KafkaReceiver(
       kafka.consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
@@ -67,10 +72,10 @@ class SubscriptionServiceSpec : StringSpec({
   
   "If repo exists, and repo has subscribers then no event is send to Kafka" {
     val user = users.insertSlackUser(slackUserId)
-    subscriptions.subscribe(user.userId, subscription)
+    subscriptions.subscribe(user, subscription)
     val service = SubscriptionService(subscriptions, users, producer) { _, _ -> true.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeRight(Unit)
+    either { service.subscribe(user.slackUserId, subscription) }.shouldBeRight(Unit)
     committedMessages(kafka) shouldBe 0
   }
   
@@ -78,16 +83,15 @@ class SubscriptionServiceSpec : StringSpec({
     users.insertSlackUser(slackUserId)
     val service = SubscriptionService(subscriptions, users, producer) { _, _ -> false.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeLeft(RepoNotFound(subscription.repository))
+    either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(RepoNotFound(subscription.repository))
   }
   
-  "If Github Client returns unexpected StatusCode, it returns RepoNotFound with StatusCode" {
+  "If Github Client returns unexpected StatusCode, it returns GithubError with StatusCode" {
     users.insertSlackUser(slackUserId)
     val service =
       SubscriptionService(subscriptions, users, producer) { _, _ -> GithubError(HttpStatusCode.BadGateway).left() }
     
-    service.subscribe(slackUserId, subscription)
-      .shouldBeLeft(RepoNotFound(subscription.repository, HttpStatusCode.BadGateway))
+    either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(GithubError(HttpStatusCode.BadGateway))
   }
 })
 

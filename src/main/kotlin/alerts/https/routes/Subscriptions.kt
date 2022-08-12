@@ -33,7 +33,7 @@ fun Routing.subscriptionRoutes(
     get {
       respond {
         val slackUserId = slackUserId()
-        val subscriptions = service.findAll(slackUserId).or(BadRequest)
+        val subscriptions = service.findAll(slackUserId)
         Subscriptions(subscriptions)
       }
     }
@@ -42,7 +42,7 @@ fun Routing.subscriptionRoutes(
       respond(Created) {
         val slackUserId = slackUserId()
         val repository = Either.catch<Repository> { call.receive() }.or(BadRequest)
-        service.subscribe(slackUserId, Subscription(repository, time.now())).or(BadRequest)
+        service.subscribe(slackUserId, Subscription(repository, time.now()))
       }
     }
     
@@ -50,7 +50,7 @@ fun Routing.subscriptionRoutes(
       respond(NoContent) {
         val slackUserId = slackUserId()
         val repository = Either.catch<Repository> { call.receive() }.or(BadRequest)
-        service.unsubscribe(slackUserId, repository).or(NotFound)
+        service.unsubscribe(slackUserId, repository)
       }
     }
   }

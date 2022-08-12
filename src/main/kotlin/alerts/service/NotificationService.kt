@@ -8,9 +8,8 @@ import alerts.persistence.Repository
 import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.UserPersistence
 import alerts.persistence.catch
-import arrow.core.Either
 import arrow.core.continuations.EffectScope
-import arrow.core.continuations.either
+import arrow.core.continuations.effect
 import arrow.core.continuations.ensureNotNull
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.optics.Optional
@@ -19,6 +18,7 @@ import io.github.nomisrev.path
 import io.github.nomisrev.string
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
@@ -58,21 +58,21 @@ private class Notifications(
   context(ResourceScope)
   override suspend fun process(): Job {
     val scope = coroutineScope(Dispatchers.IO)
-    return processor.process { event ->
-      findSubscribers(event).fold({ error ->
-        error.log()
-        emptyFlow()
-      }, List<SlackNotification>::asFlow)
-    }.launchIn(scope)
+    return processor.process(::findSubscribers).launchIn(scope)
   }
   
-  private suspend fun findSubscribers(event: GithubEvent): Either<NotificationError, List<SlackNotification>> = either {
-    val repo = extractRepo(event)
-    val userIds = service.findSubscribers(repo)
-    val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
-    slackUserIds.map { SlackNotification(it, event.event) }
-  }
+  private suspend fun findSubscribers(event: GithubEvent): Flow<SlackNotification> =
+    effect {
+      val repo = extractRepo(event)
+      val userIds = service.findSubscribers(repo)
+      val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
+      slackUserIds.map { SlackNotification(it, event.event) }
+    }.fold({ error -> error.log() }, List<SlackNotification>::asFlow)
   
+  /**
+   * Extract the [Repository] from the [GithubEvent].
+   * Raises a [NotificationError] in case of any error.
+   */
   context(EffectScope<NotificationError>)
   private suspend fun extractRepo(event: GithubEvent): Repository {
     val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
@@ -83,11 +83,12 @@ private class Notifications(
     return Repository(owner, name)
   }
   
-  private fun NotificationError.log(): Unit =
+  /** Logs the [NotificationError] and returns an empty [Flow]. */
+  private fun <A> NotificationError.log(): Flow<A> =
     when (this) {
       is RepoFullNameNotFound -> logger.info { "Didn't find `repository.full_name` in JSON. $json." }
       is MalformedJson -> logger.info(exception) { "Received malformed JSON from GithubEvent" }
       is CannotExtractRepo ->
         logger.info { "full_name received in unexpected format. Expected `owner/repo` but found $fullName" }
-    }
+    }.let { emptyFlow() }
 }
