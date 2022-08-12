@@ -7,21 +7,23 @@ import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.persistence.SubscriptionsPersistence
-import alerts.persistence.UserId
 import alerts.persistence.UserPersistence
-import arrow.core.Either
-import arrow.core.continuations.Effect
 import arrow.core.continuations.EffectScope
-import arrow.core.continuations.effect
-import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import io.ktor.http.HttpStatusCode
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 typealias MissingRepo = EffectScope<RepoNotFound>
-data class RepoNotFound(val repository: Repository)
+@Serializable
+data class RepoNotFound(val repository: Repository){
+  fun asJson(): String = Json.encodeToString(serializer(), this)
+}
 
 typealias MissingSlackUser = EffectScope<SlackUserNotFound>
-data class SlackUserNotFound(val slackUserId: SlackUserId)
+@Serializable
+data class SlackUserNotFound(val slackUserId: SlackUserId) {
+  fun asJson(): String = Json.encodeToString(serializer(), this)
+}
 
 interface SubscriptionService {
   /** Returns all subscriptions for the given [slackUserId], empty if none found */
@@ -32,7 +34,7 @@ interface SubscriptionService {
    * Subscribes to the provided [Subscription], only if the [Repository] exists.
    * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is sent.
    */
-  context(MissingRepo, MissingSlackUser)
+  context(MissingRepo, EffectScope<GithubError>)
   suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription)
   
   /**

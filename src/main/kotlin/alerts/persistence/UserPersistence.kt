@@ -6,6 +6,7 @@ import io.prometheus.client.Counter
 import kotlinx.serialization.Serializable
 
 @JvmInline
+@Serializable
 value class UserId(val serial: Long)
 
 @JvmInline

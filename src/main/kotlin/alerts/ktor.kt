@@ -17,10 +17,12 @@ import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.content.TextContent
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
@@ -48,22 +50,27 @@ suspend fun KtorCtx.slackUserId(): SlackUserId =
  * Useful to bail out with a [HttpStatusCode] without content.
  */
 context(StatusCodeError)
-suspend fun <A> Either<*, A>.or(code: HttpStatusCode): A =
-  mapLeft { statusCode(code) }.bind()
+suspend fun <E, A> Either<E, A>.or(transform: suspend (E) -> HttpStatusCode): A =
+  mapLeft { statusCode(transform(it)) }.bind()
 
 /** Turn [HttpStatusCode] into [OutgoingContent]. */
 fun statusCode(statusCode: HttpStatusCode): OutgoingContent = object : OutgoingContent.NoContent() {
   override val status: HttpStatusCode = statusCode
 }
 
+fun statusCode(statusCode: HttpStatusCode, msg: String): TextContent =
+  TextContent(msg, ContentType.Application.Json, statusCode)
+
+fun badRequest(msg: String): TextContent = statusCode(BadRequest, msg)
+
 /**
  * Respond with [A] which must be [Serializable],
  *   or shift with [OutgoingContent], typically through [statusCode].
  *
  * This DSL can also implicitly translate some errors to [OutgoingContent].
- *  - [SlackUserNotFound] => [NotFound]
- *  - [RepoNotFound] => [BadRequest]
- *  - [GithubError] => [BadRequest]
+ *  - [SlackUserNotFound] => [NotFound] + Json representation of [SlackUserNotFound]
+ *  - [RepoNotFound] => [BadRequest] + Json representation of [RepoNotFound]
+ *  - [GithubError] => [BadRequest] + Json representation of the underlying [HttpStatusCode].
  */
 suspend inline fun <reified A : Any> KtorCtx.respond(
   code: HttpStatusCode = HttpStatusCode.OK,
@@ -79,9 +86,9 @@ suspend inline fun <reified A : Any> KtorCtx.respond(
       effect {
         // We need to manually wire the contexts, because the Kotlin Compiler doesn't properly understand this yet.
         resolve(this@slackUser, this@missingRepo, this, this@statusCode, TypePlacedHolder)
-      } catch { shift(statusCode(BadRequest)) }
-    } catch { shift(statusCode(BadRequest)) }
-  } catch { shift(statusCode(NotFound)) }
+      } catch { shift(badRequest(it.asJson())) }
+    } catch { shift(badRequest(it.asJson())) }
+  } catch { shift(statusCode(NotFound, it.asJson())) }
 }.fold({ call.respond(it) }) { call.respond(code, it) }
 
 /** https://arrow-kt.github.io/suspendapp/ */
@@ -116,9 +123,3 @@ suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Con
 sealed interface TypePlacedHolder<out A> {
   companion object : TypePlacedHolder<Nothing>
 }
-
-// TODO copied from Arrow 2.0 branch, backport to 1.x.x
-context(EffectScope<E2>)
-@OptIn(ExperimentalTypeInference::class)
-suspend infix fun <E, E2, A> Effect<E, A>.catch(@BuilderInference resolve: suspend EffectScope<E2>.(E) -> A): A =
-  effect { fold({ resolve(it) }, { it }) }.bind()

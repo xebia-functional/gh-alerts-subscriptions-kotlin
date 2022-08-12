@@ -2,6 +2,7 @@ package alerts.https.routes
 
 import alerts.StatusCodeError
 import alerts.Time
+import alerts.badRequest
 import alerts.or
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
@@ -10,12 +11,9 @@ import alerts.respond
 import alerts.service.SubscriptionService
 import alerts.statusCode
 import arrow.core.continuations.ensureNotNull
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.Parameters
-import io.ktor.http.content.TextContent
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.routing.Route
@@ -52,6 +50,3 @@ private suspend fun Parameters.decodeSlashCommand(): SlashCommand {
   val slackUserId = ensureNotNull(get("user_id")?.let(::SlackUserId)) { badRequest("missing user_id") }
   return SlashCommand(slackUserId, Command.Subscribe, repo)
 }
-
-private fun badRequest(msg: String) =
-  TextContent(msg, ContentType.Text.Plain, BadRequest)

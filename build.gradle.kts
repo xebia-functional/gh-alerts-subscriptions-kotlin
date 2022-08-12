@@ -95,7 +95,10 @@ dependencies {
   implementation(libs.kotlinx.serialization.jsonpath)
   implementation(libs.micrometer.prometheus)
   implementation(libs.kotlinx.datetime)
-  
+  implementation("guru.zoroark.koa:koa-dsl:main-SNAPSHOT")
+  implementation("guru.zoroark.koa:koa-ktor:main-SNAPSHOT")
+  implementation("guru.zoroark.koa:koa-ktor-ui:main-SNAPSHOT")
+
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
   testImplementation(libs.testcontainers.kafka)
