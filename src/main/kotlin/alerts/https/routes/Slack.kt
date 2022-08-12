@@ -1,5 +1,6 @@
 package alerts.https.routes
 
+import alerts.badRequest
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
@@ -51,8 +52,6 @@ fun Routing.slackRoutes(service: SubscriptionService) =
 
 private suspend fun Parameters.decodeSlashCommand(): Either<TextContent, SlashCommand> =
   either {
-    fun badRequest(msg: String) = TextContent(msg, ContentType.Text.Plain, BadRequest)
-    
     val command = ensureNotNull(get("command")) { badRequest("no command specified") }
     ensure(command == "/subscribe") { badRequest("unknown command: $command") }
     val parts = ensureNotNull(get("text")?.split("/")) { badRequest("missing owner/repository") }

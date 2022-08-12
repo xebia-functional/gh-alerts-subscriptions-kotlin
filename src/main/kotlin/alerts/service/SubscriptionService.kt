@@ -1,5 +1,6 @@
 package alerts.service
 
+import alerts.HttpStatusCodeSerializer
 import alerts.https.client.GithubClient
 import alerts.kafka.SubscriptionProducer
 import alerts.persistence.Repository
@@ -12,6 +13,22 @@ import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import io.ktor.http.HttpStatusCode
+import io.ktor.util.Encoder
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.buildSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.CompositeEncoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
 import mu.KotlinLogging
 
 interface SubscriptionService {
@@ -20,19 +37,27 @@ interface SubscriptionService {
   
   /**
    * Subscribes to the provided [Subscription], only if the [Repository] exists.
-   * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is send.
+   * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is sent.
    */
   suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription): Either<SubscriptionError, Unit>
   
   /**
    * Unsubscribes the repo. No-op if the [slackUserId] was not subscribed to the repo.
-   * If the [Repository] has no more subscriptions a [SubscriptionEvent.Deleted] event is send.
+   * If the [Repository] has no more subscriptions a [SubscriptionEvent.Deleted] event is sent.
    */
   suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository): Either<UserNotFound, Unit>
 }
 
+@Serializable
 sealed interface SubscriptionError
-data class RepoNotFound(val repository: Repository, val statusCode: HttpStatusCode? = null) : SubscriptionError
+
+@Serializable
+data class RepoNotFound(
+  val repository: Repository,
+  @Serializable(HttpStatusCodeSerializer::class) val statusCode: HttpStatusCode? = null,
+) : SubscriptionError
+
+@Serializable
 data class UserNotFound(val slackUserId: SlackUserId, val user: UserId? = null) : SubscriptionError
 
 fun SubscriptionService(
