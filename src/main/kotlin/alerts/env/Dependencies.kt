@@ -20,11 +20,7 @@ class Dependencies(
 ) {
   companion object {
     fun resource(env: Env): Resource<Dependencies> = resource {
-      val sqlDelight = sqlDelight(env.postgres).bind()
-      val appMicrometerRegistry = Resource({
-        PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-      }, { p, _ -> p.close() }).bind()
-      
+      val appMicrometerRegistry = metrics.bind()
       val slackUsersCounter: Counter =
         Counter
           .build()
@@ -32,12 +28,16 @@ class Dependencies(
           .help("Number of Slack users registered with our service")
           .register(appMicrometerRegistry.prometheusRegistry)
       
+      val sqlDelight = sqlDelight(env.postgres).bind()
       val users = userPersistence(sqlDelight.usersQueries, slackUsersCounter)
       val subscriptionsPersistence =
         subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+      
       val githubEventProcessor = githubEventProcessor(env.kafka)
       val producer = SubscriptionProducer.resource(env.kafka).bind()
+      
       val client = GithubClient.resource(env.github).bind()
+      
       Dependencies(
         NotificationService(users, subscriptionsPersistence, githubEventProcessor),
         SubscriptionService(subscriptionsPersistence, users, producer, client),
@@ -46,3 +46,6 @@ class Dependencies(
     }
   }
 }
+
+private val metrics: Resource<PrometheusMeterRegistry> =
+  Resource({ PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }) { p, _ -> p.close() }
