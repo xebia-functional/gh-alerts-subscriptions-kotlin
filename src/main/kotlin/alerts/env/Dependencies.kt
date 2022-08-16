@@ -21,7 +21,9 @@ class Dependencies(
   companion object {
     fun resource(env: Env): Resource<Dependencies> = resource {
       val sqlDelight = sqlDelight(env.postgres).bind()
-      val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+      val appMicrometerRegistry = Resource({
+        PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+      }, { p, _ -> p.close() }).bind()
       
       val slackUsersCounter: Counter =
         Counter
