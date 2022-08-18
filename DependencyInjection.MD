@@ -1,16 +1,16 @@
 # Dependency Injection & Graceful Shutdown
 
-When building any application, there are a number of dependencies that need to be injected.
+When building any application, several dependencies usually need to be injected.
 Typically, many of these dependencies have some sort of "lifecycle" that needs to be carefully controlled.
 
 For example, when we require communicating to a `Database` we need to set up a `DataSource`.
 This `DataSource` creates a pool of `Connection`s that is used to communicate with the database,
-and it needs to be shut down when the application is shut down.
+and it needs to be released when the application is shut down.
 Otherwise, the `DataSource` will remain open and the database will keep the connections open for us until they time out.
 
 This is a problem when we're running the application in a distributed environment, because pods can be restarted or scaled up or down.
-If we have _many_ pods that keep their connections open, even after shutting down the application,
-then we'll get a lot of connections open and the database will be overwhelmed.
+The number of connections will increase drastically if _many_ pods keep those connections open, 
+even after shutting down the application, so the database will be overwhelmed.
 
 For this reason we construct our _dependency graph_ using Arrow's [`Resource`](https://arrow-kt.io/docs/apidocs/arrow-fx-coroutines/arrow.fx.coroutines/-resource/),
 and we run our application using [`SuspendApp`](https://arrow-kt.github.io/suspendapp/).
@@ -73,11 +73,11 @@ fun main() = SuspendApp {
 In the example above,
 you can clearly see how you can easily compose very complex dependencies while their lifecycle is automatically taken care of.
 
-We can improve this further by removing the need for calling _bind, which has been proposed for the Arrow 2.0 encoding of `Resource` as well.
+We can improve this further by removing the need for calling _bind_, which has been proposed for the Arrow 2.0 encoding of `Resource` as well.
 
-The make the _capabilities_ of `Resource` available all we have to do is use `suspend` and have `ResourceScope` in our context.
+To make the _capabilities_ of `Resource` available, all we have to do is use `suspend` and have `ResourceScope` in our context.
 Most conveniently this is currently done using extension functions,
-but it could also be done by passing a parameter and using `with` or using `context receivers`.
+but it could also be done by passing a parameter and using `with` or `context receivers`.
 
 ```kotlin
 suspend fun ResourceScope.SqlDelight(env: Env.Postgres): SqlDelight = TODO()
@@ -108,7 +108,7 @@ fun main() = SuspendApp {
 }
 ```
 
-In the example above you can see that the "clutter", boilerplate or "flatMap/bind dance" has disappeared, and regular imperative code remains.
+The example above shows that the "clutter", boilerplate, or "flatMap/bind dance" has disappeared, and regular imperative code remains.
 
 - `Resource({ }, { }).bind()` has been replaced by `suspend fun install`, which _installs_ the `Resource` into the `Scope`.
 - `Resource.use` is replaced by `resourceScope { }`
