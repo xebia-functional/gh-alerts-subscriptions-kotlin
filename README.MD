@@ -5,6 +5,21 @@ This repository contains an example implementation of the subscription microserv
 
 ### 📘 Quick Start
 
+#### Local Development
+
+To run the project locally the easiest is to:
+  1. Run Postgres and Kafka through `docker-compose`
+  2. Start the application through Gradle
+
+```shell
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+./gradlew run
+```
+
+NOTE: Gradle does not respect propagating SIGTERM to the running application, so graceful shutdown is not respecting when running this way.
+
+##### Running the application in Docker
+
 Generate an assembly of the application
 
 ```shell
@@ -32,10 +47,12 @@ curl --request GET 'http://localhost:8080/ping'
 pong
 ```
 
-When you're done
+When you're done, stop the services.
 
 ```shell
 docker-compose down --remove-orphans
 ```
 
-to shut down the services.
+### 📖 Design decisions
+
+- [Dependency Injection](DependencyInjection.MD)
