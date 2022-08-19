@@ -7,6 +7,7 @@ import alerts.persistence.SubscriptionsPersistence
 import alerts.persistence.userPersistence
 import alerts.service.NotificationService
 import alerts.service.SubscriptionService
+import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
@@ -21,7 +22,7 @@ class Dependencies(
 context(ResourceScope)
 suspend fun Dependencies(env: Env): Dependencies {
   val sqlDelight = sqlDelight(env.postgres)
-  val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+  val appMicrometerRegistry = metrics()
   
   val slackUsersCounter: Counter =
     Counter
@@ -42,3 +43,7 @@ suspend fun Dependencies(env: Env): Dependencies {
     appMicrometerRegistry
   )
 }
+
+context(ResourceScope)
+private suspend fun metrics(): PrometheusMeterRegistry =
+  Resource({ PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }) { p, _ -> p.close() }.bind()
