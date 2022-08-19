@@ -2,9 +2,6 @@ package alerts
 
 import alerts.env.Dependencies
 import alerts.env.Env
-import alerts.https.routes.healthRoute
-import alerts.https.routes.metricsRoute
-import alerts.https.routes.subscriptionRoutes
 import arrow.continuations.SuspendApp
 import arrow.fx.coroutines.continuations.resource
 import io.ktor.server.application.Application

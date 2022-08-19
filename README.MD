@@ -55,4 +55,5 @@ docker-compose down --remove-orphans
 
 ### 📖 Design decisions
 
+- [Env / Configuration](EnviromentConfiguration.MD)
 - [Dependency Injection](DependencyInjection.MD)
