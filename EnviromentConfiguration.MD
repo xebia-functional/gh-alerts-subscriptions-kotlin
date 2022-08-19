@@ -1,7 +1,7 @@
 # Environment / Configuration
 
-When setting up a server, we often want to specify specific configurations.
-For example, on which IP and port will the server be available depending on the environment we're running in.
+When setting up a server, we often want to provide specific configurations depending on the environment we're running it in. 
+For example, the IP address and port on which the server will be available.
 
 ```text
 DEV: 127.0.0.1:8080
@@ -9,10 +9,11 @@ ACC: 192.168.0.105:8085
 PROD: 12.14.16.18:89127
 ```
 
-Also, we typically have to integrate with many services.
-This could be a Database, some other microservice, Kafka, Redis, etc.
-These are typically also running at different network coordinates,
-and with different credentials depending on the environment we're running in.
+Additionally, we might need to integrate our server with many other services 
+like databases, Kafka, Redis, or some other microservices.
+
+These external resources are also running at different network coordinates 
+and credentials based on the environment the server is running in.
 
 For example, `TestContainers` vs `docker-compose` vs `Google Cloud Platform K8S`.
 Which we could call `TEST`, `DEV` and `ACC`/`PROD` environment respectively.
@@ -58,7 +59,7 @@ As you can see above, we have a nicely typed `Env` type. There are a couple of t
 There are two things we've ignored in the previous section which is _side effects_, and error tracking.
 `System.getenv` is already a _side effect_, but wrapping it inside `suspend` doesn't offer us a lot of benefit.
 
-If you require accessing a remote config, feature flags or read some configuration from disk then `suspend` might offer more benefits.
+If you require accessing a remote config, feature flags, or reading some configuration from disk, then `suspend` might offer more benefits.
 For example, you could read remote configs in parallel.
 
 ```kotlin
