@@ -18,7 +18,11 @@ and credentials based on the environment the server is running in.
 For example, `TestContainers` vs `docker-compose` vs `Google Cloud Platform K8S`.
 Which we could call `TEST`, `DEV` and `ACC`/`PROD` environment respectively.
 
-So what are our different options of configuring, and setting up these configurations.
+Most commonly used techniques for configuring the application is either use `data class` to model the _Enviroment Configuration_ in a typed way and manually configuring frameworks, or letting frameworks automatically read configuration.
+
+When writing your own domain model you can either load the config programatically, or using formatted files with a library to convert the file into your typed model.
+
+Below we explore both options.
 
 ## Plain Kotlin
 
@@ -124,10 +128,12 @@ This clearly shows us what is going wrong with the environment, and which config
 This pattern can easily be combined with `suspend`,
 and thus gives us all powers we typically look for when building typed configuration libraries.
 
-## Hocon
+## File based configuration (hocon, yml, ...)
 
-[Hocon by Lightbend](https://github.com/lightbend/config/blob/main/HOCON.md) is another very popular format for application configuration.
-There are many libraries out there, but we suggest using [Hoplite](https://github.com/sksamuel/hoplite).
+Perhaps the most common approach is to use configuration files inside the `resource` folder, and letting the framework read it, or use a library specifically for decoding configuration files.
+
+In the example below we're going to use the [Hocon format by Lightbend](https://github.com/lightbend/config/blob/main/HOCON.md), a popular format for configuring servers.
+In combination with [Hoplite](https://github.com/sksamuel/hoplite) to automatically _decode_ the hocon file into our own _data class_ domain.
 
 Let's take the same example from before, but adjust it to use Hocon.
 
