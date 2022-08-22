@@ -3,6 +3,7 @@ package alerts.https.client
 import alerts.HttpStatusCodeSerializer
 import alerts.env.Env
 import arrow.core.Either
+import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.Schedule
@@ -19,6 +20,8 @@ import mu.KLogger
 import mu.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+
+typealias GithubErrors = EffectScope<GithubError>
 
 @JvmInline
 value class GithubError(val statusCode: HttpStatusCode) {

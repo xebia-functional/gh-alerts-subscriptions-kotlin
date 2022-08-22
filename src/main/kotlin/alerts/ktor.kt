@@ -1,29 +1,24 @@
 package alerts
 
+import alerts.https.client.GithubErrors
 import alerts.https.client.GithubError
-import alerts.kafka.GithubEvent
 import alerts.persistence.SlackUserId
 import alerts.service.MissingRepo
 import alerts.service.MissingSlackUser
 import alerts.service.RepoNotFound
 import alerts.service.SlackUserNotFound
-import arrow.core.identity
 import arrow.core.Either
-import arrow.core.continuations.Effect
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
 import arrow.core.continuations.ensureNotNull
-import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
-import arrow.fx.coroutines.continuations.resource
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
-import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.engine.ApplicationEngine
@@ -34,7 +29,6 @@ import io.ktor.util.pipeline.PipelineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
-import kotlin.experimental.ExperimentalTypeInference
 
 typealias KtorCtx = PipelineContext<Unit, ApplicationCall>
 
@@ -77,7 +71,7 @@ suspend inline fun <reified A : Any> KtorCtx.respond(
   crossinline resolve: suspend context(
     MissingSlackUser,
     MissingRepo,
-    EffectScope<GithubError>,
+    GithubErrors,
     StatusCodeError
   ) (TypePlacedHolder<StatusCodeError>) -> A
 ): Unit = effect statusCode@{

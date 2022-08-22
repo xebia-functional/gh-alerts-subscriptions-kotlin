@@ -1,7 +1,7 @@
 package alerts.service
 
+import alerts.https.client.GithubErrors
 import alerts.https.client.GithubClient
-import alerts.https.client.GithubError
 import alerts.kafka.SubscriptionProducer
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
@@ -34,7 +34,7 @@ interface SubscriptionService {
    * Subscribes to the provided [Subscription], only if the [Repository] exists.
    * If this is a **new** subscription for the user a [SubscriptionEvent.Created] event is sent.
    */
-  context(MissingRepo, EffectScope<GithubError>)
+  context(MissingRepo, GithubErrors)
   suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription)
   
   /**
@@ -65,7 +65,7 @@ private class Subscriptions(
     return subscriptions.findAll(user)
   }
   
-  context(EffectScope<GithubError>, MissingRepo)
+  context(GithubErrors, MissingRepo)
   override suspend fun subscribe(slackUserId: SlackUserId, subscription: Subscription) {
     val user = users.insertSlackUser(slackUserId)
     val exists = client.repositoryExists(subscription.repository.owner, subscription.repository.name).bind()
