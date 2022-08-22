@@ -11,7 +11,8 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import org.testcontainers.containers.wait.strategy.Wait
 
-suspend fun ResourceScope.PostgreSQLContainer(): PostgreSQLContainer =
+context(ResourceScope)
+suspend fun PostgreSQLContainer(): PostgreSQLContainer =
  PostgreSQLContainer.resource().bind()
 
 class PostgreSQLContainer private constructor() :

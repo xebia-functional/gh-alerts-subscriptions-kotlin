@@ -3,7 +3,6 @@ package alerts.https.routes
 import alerts.StatusCodeError
 import alerts.Time
 import alerts.badRequest
-import alerts.or
 import alerts.persistence.Repository
 import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription

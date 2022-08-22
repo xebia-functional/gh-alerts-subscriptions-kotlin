@@ -106,7 +106,6 @@ context(EffectScope<OutgoingContent>)
     .attempt { _: ContentTransformationException -> shift(badRequest(INCORRECT_REPO_MESSAGE)) }
     .bind()
 
-//<editor-fold desc="OpenAPI">
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
 
@@ -134,4 +133,3 @@ private fun OperationBuilder.repositoryBody(): Unit =
 
 private fun OperationBuilder.slackUserIdQuery(): Unit =
   "slackUserId" queryParameter { schema("slackUserId") }
-//</editor-fold>
