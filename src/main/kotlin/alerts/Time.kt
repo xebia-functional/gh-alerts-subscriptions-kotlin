@@ -5,7 +5,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 fun interface Time {
-  suspend fun now(): LocalDateTime
+  fun now(): LocalDateTime
   
   object UTC : Time by TimeZonedTime(TimeZone.UTC)
   
@@ -16,6 +16,6 @@ fun interface Time {
 }
 
 private class TimeZonedTime(private val timeZone: TimeZone) : Time {
-  override suspend fun now(): LocalDateTime =
+  override fun now(): LocalDateTime =
     kotlinx.datetime.Clock.System.now().toLocalDateTime(timeZone)
 }
