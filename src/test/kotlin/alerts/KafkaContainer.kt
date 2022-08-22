@@ -16,7 +16,8 @@ import org.testcontainers.utility.DockerImageName
 import java.lang.System.getProperty
 
 /** A KafkaContainer that is set up in the same as docker-compose.yml */
-suspend fun ResourceScope.KafkaContainer(): Env.Kafka {
+context(ResourceScope)
+suspend fun KafkaContainer(): Env.Kafka {
   val network = Network.newNetwork()
   return parZip(
     { zooKeeper(network) },
@@ -30,7 +31,8 @@ suspend fun ResourceScope.KafkaContainer(): Env.Kafka {
   }
 }
 
-private suspend fun ResourceScope.schemaRegistry(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
+context(ResourceScope)
+private suspend fun schemaRegistry(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
   withContext(Dispatchers.IO) {
     val schemaRegistryImage: DockerImageName =
       if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-schema-registry-arm64:7.0.1")
@@ -49,7 +51,8 @@ private suspend fun ResourceScope.schemaRegistry(network: Network): GenericConta
   }
 }.bind()
 
-private suspend fun ResourceScope.zooKeeper(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
+context(ResourceScope)
+private suspend fun zooKeeper(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
   withContext(Dispatchers.IO) {
     val zooKeeperImage: DockerImageName =
       if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-zookeeper-arm64:7.0.1")
@@ -65,7 +68,8 @@ private suspend fun ResourceScope.zooKeeper(network: Network): GenericContainer<
   }
 }.bind()
 
-private suspend fun ResourceScope.kafka(network: Network): KafkaContainer = Resource.fromAutoCloseable {
+context(ResourceScope)
+private suspend fun kafka(network: Network): KafkaContainer = Resource.fromAutoCloseable {
   withContext(Dispatchers.IO) {
     val kafkaImage: DockerImageName =
       if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-kafka-arm64:7.0.1")
