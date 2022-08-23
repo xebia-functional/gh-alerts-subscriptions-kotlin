@@ -21,6 +21,7 @@ import io.ktor.http.content.TextContent
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
+import io.ktor.server.resources.get
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
@@ -41,7 +42,7 @@ data class SlashCommand(
 )
 
 fun Routing.slackRoutes(service: SubscriptionService) =
-  get("/slack/command") {
+  get<Routes.Slack> {
     either {
       val command = call.receiveParameters().decodeSlashCommand().bind()
       ensure(command.command == Command.Subscribe) { statusCode(InternalServerError) }

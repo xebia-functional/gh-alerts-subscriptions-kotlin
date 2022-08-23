@@ -29,6 +29,7 @@ import kotlinx.serialization.encoding.CompositeEncoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
 interface SubscriptionService {
@@ -49,7 +50,9 @@ interface SubscriptionService {
 }
 
 @Serializable
-sealed interface SubscriptionError
+sealed interface SubscriptionError {
+  fun toJson(): String = Json.encodeToString(serializer(), this)
+}
 
 @Serializable
 data class RepoNotFound(
