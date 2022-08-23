@@ -18,6 +18,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
 import io.ktor.server.application.log
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.resources.Resources
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -40,6 +41,7 @@ fun Application.configure() {
       }
     )
   }
+  install(Resources)
   install(Koa) {
     title = "GitHub alerts API"
     version = "v1"

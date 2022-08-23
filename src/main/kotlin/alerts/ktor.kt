@@ -2,15 +2,12 @@ package alerts
 
 import alerts.https.client.GithubErrors
 import alerts.https.client.GithubError
-import alerts.persistence.SlackUserId
 import alerts.service.MissingRepo
 import alerts.service.MissingSlackUser
 import alerts.service.RepoNotFound
 import alerts.service.SlackUserNotFound
-import arrow.core.Either
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
-import arrow.core.continuations.ensureNotNull
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
 import io.ktor.http.ContentType
@@ -33,19 +30,6 @@ import kotlinx.coroutines.delay
 typealias KtorCtx = PipelineContext<Unit, ApplicationCall>
 
 typealias StatusCodeError = EffectScope<OutgoingContent>
-
-/** Get [SlackUserId] from Query Parameters, or exit with [BadRequest] */
-context(StatusCodeError)
-suspend fun KtorCtx.slackUserId(): SlackUserId =
-  SlackUserId(ensureNotNull(call.request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
-
-/**
- * Rethrow [Either.Left] as [HttpStatusCode].
- * Useful to bail out with a [HttpStatusCode] without content.
- */
-context(StatusCodeError)
-suspend fun <E, A> Either<E, A>.or(transform: suspend (E) -> HttpStatusCode): A =
-  mapLeft { statusCode(transform(it)) }.bind()
 
 /** Turn [HttpStatusCode] into [OutgoingContent]. */
 fun statusCode(statusCode: HttpStatusCode): OutgoingContent = object : OutgoingContent.NoContent() {

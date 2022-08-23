@@ -47,6 +47,7 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
 ktor-server-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer", version.ref = "ktor" }
+ktor-routes = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-client = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktor" }
@@ -85,7 +86,8 @@ ktor-server = [
     "ktor-serialization",
     "ktor-server-netty",
     "ktor-server-auth",
-    "ktor-server-micrometer"
+    "ktor-server-micrometer",
+    "ktor-routes"
 ]
 kotest = [
     "kotest-assertionsCore",

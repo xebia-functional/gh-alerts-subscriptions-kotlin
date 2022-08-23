@@ -11,7 +11,6 @@ import alerts.respond
 import alerts.service.RepoNotFound
 import alerts.service.SlackUserNotFound
 import alerts.service.SubscriptionService
-import alerts.slackUserId
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
 import guru.zoroark.koa.dsl.OperationBuilder
@@ -28,12 +27,10 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.call
 import io.ktor.server.request.ContentTransformationException
 import io.ktor.server.request.receive
-import io.ktor.server.routing.Route
+import io.ktor.server.resources.delete
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -45,63 +42,57 @@ data class Subscriptions(val subscriptions: List<Subscription>)
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
   time: Time = Time.UTC,
-): Route =
-  route("subscription") {
-    get {
-      respond {
-        val slackUserId = slackUserId()
-        val subscriptions = service.findAll(slackUserId)
-        Subscriptions(subscriptions)
-      }
-    } describe {
-      slackUserIdQuery()
-      slackUserNotFoundReturn()
-      OK.value response ContentType.Application.Json.contentType {
-        schema(subscriptionsExample)
-        description = "Returns all subscriptions for the given slack user id"
-      }
+) {
+  get<Routes.Subscription> { req ->
+    respond {
+      val subscriptions = service.findAll(req.slackUserId)
+      Subscriptions(subscriptions)
     }
-    
-    post {
-      respond(Created) {
-        val slackUserId = slackUserId()
-        val repository = receiveRepository()
-        service.subscribe(slackUserId, Subscription(repository, time.now()))
-      }
-    } describe {
-      slackUserIdQuery()
-      repositoryBody()
-      incorrectRepoBodyReturn()
-      repoNotFoundReturn()
-      githubErrorReturn()
-      Created.value response {
-        description = "Successfully subscribed to repository"
-      }
-    }
-    
-    delete {
-      respond(NoContent) {
-        val slackUserId = slackUserId()
-        val repository = receiveRepository()
-        service.unsubscribe(slackUserId, repository)
-      }
-    } describe {
-      slackUserIdQuery()
-      repositoryBody()
-      incorrectRepoBodyReturn()
-      repoNotFoundReturn()
-      slackUserNotFoundReturn()
-      NoContent.value response {
-        description = "Deleted the subscription for the given user."
-      }
+  } describe {
+    slackUserIdQuery()
+    slackUserNotFoundReturn()
+    OK.value response ContentType.Application.Json.contentType {
+      schema(subscriptionsExample)
+      description = "Returns all subscriptions for the given slack user id"
     }
   }
+  post<Routes.Subscription> { req ->
+    respond(Created) {
+      val repository = receiveRepository()
+      service.subscribe(req.slackUserId, Subscription(repository, time.now()))
+    }
+  } describe {
+    slackUserIdQuery()
+    repositoryBody()
+    incorrectRepoBodyReturn()
+    repoNotFoundReturn()
+    githubErrorReturn()
+    Created.value response {
+      description = "Successfully subscribed to repository"
+    }
+  }
+  delete<Routes.Subscription> { req ->
+    respond(NoContent) {
+      val repository = receiveRepository()
+      service.unsubscribe(req.slackUserId, repository)
+    }
+  } describe {
+    slackUserIdQuery()
+    repositoryBody()
+    incorrectRepoBodyReturn()
+    repoNotFoundReturn()
+    slackUserNotFoundReturn()
+    NoContent.value response {
+      description = "Deleted the subscription for the given user."
+    }
+  }
+}
 
 private const val INCORRECT_REPO_MESSAGE =
   "The body of the request must be a JSON object with an 'owner', and 'name' field."
 
 context(EffectScope<OutgoingContent>)
-  private suspend fun KtorCtx.receiveRepository(): Repository =
+private suspend fun KtorCtx.receiveRepository(): Repository =
   effect<OutgoingContent, Repository> { call.receive() }
     .attempt { _: ContentTransformationException -> shift(badRequest(INCORRECT_REPO_MESSAGE)) }
     .bind()
