@@ -6,7 +6,6 @@ import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.respond
 import alerts.service.RepoNotFound
-import alerts.service.SubscriptionError
 import alerts.service.SubscriptionService
 import alerts.service.UserNotFound
 import alerts.statusCode
@@ -33,15 +32,17 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class Subscriptions(val subscriptions: List<Subscription>)
 
+private const val INCORRECT_REPO_MESSAGE =
+  "The body of the request must be a JSON object with an 'owner', and 'name' field."
+
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
   clock: Clock = Clock.System,
-  timeZone: TimeZone = TimeZone.UTC
+  timeZone: TimeZone = TimeZone.UTC,
 ) {
   get<Routes.Subscription> { req ->
     either {
@@ -59,7 +60,9 @@ fun Routing.subscriptionRoutes(
   
   post<Routes.Subscription> { req ->
     either {
-      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
+      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
+        badRequest(INCORRECT_REPO_MESSAGE)
+      }
       service.subscribe(req.slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
         .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
     }.respond(Created)
@@ -76,7 +79,9 @@ fun Routing.subscriptionRoutes(
   
   delete<Routes.Subscription> { req ->
     either {
-      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
+      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
+        badRequest(INCORRECT_REPO_MESSAGE)
+      }
       service.unsubscribe(req.slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
     }.respond(NoContent)
   } describe {
@@ -93,9 +98,6 @@ fun Routing.subscriptionRoutes(
 
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
-
-private const val INCORRECT_REPO_MESSAGE =
-  "The body of the request must be a JSON object with an 'owner', and 'name' field."
 
 private fun OperationBuilder.incorrectRepoBodyReturn(): Unit =
   BadRequest.value response ContentType.Application.Json.contentType { schema(INCORRECT_REPO_MESSAGE) }
