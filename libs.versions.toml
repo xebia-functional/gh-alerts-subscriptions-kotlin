@@ -47,10 +47,11 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
 ktor-server-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer", version.ref = "ktor" }
-ktor-routes = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-client = { module = "io.ktor:ktor-client-apache", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktor" }
+ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 detekt-gradle = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
@@ -76,7 +77,8 @@ arrow = ["arrow-core", "arrow-fx"]
 ktor-client = [
     "ktor-client",
     "ktor-client-content-negotiation",
-    "ktor-client-serialization"
+    "ktor-client-serialization",
+    "ktor-client-resources"
 ]
 ktor-server = [
     "ktor-server-core",
@@ -87,7 +89,7 @@ ktor-server = [
     "ktor-server-netty",
     "ktor-server-auth",
     "ktor-server-micrometer",
-    "ktor-routes"
+    "ktor-server-resources"
 ]
 kotest = [
     "kotest-assertionsCore",
