@@ -80,8 +80,8 @@ tasks {
   test {
     useJUnitPlatform()
     extensions.configure(KoverTaskExtension::class) {
-      includes = listOf("alerts.*")
-      excludes = listOf("alerts.sqldelight")
+      includes.add("alerts.*")
+      excludes.add("alerts.sqldelight")
     }
   }
 }
