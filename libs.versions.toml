@@ -25,6 +25,7 @@ kotlinx-datetime = "0.4.0"
 kafka = "7.1.1"
 avro = "1.11.0"
 prometheus = "1.9.2"
+tegralOpenApi = "0.0.2"
 
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
@@ -69,6 +70,8 @@ kafka-schema-registry = { module = "io.confluent:kafka-schema-registry-client", 
 kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "kafka" }
 avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "prometheus" }
+tegral-openApi-ktor = { module = "guru.zoroark.tegral:tegral-openapi-ktor", version.ref = "tegralOpenApi" }
+tegral-openApi-ktor-ui = { module = "guru.zoroark.tegral:tegral-openapi-ktorui", version.ref = "tegralOpenApi" }
 
 [bundles]
 arrow = ["arrow-core", "arrow-fx"]

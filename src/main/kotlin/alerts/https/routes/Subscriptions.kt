@@ -14,9 +14,9 @@ import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import com.github.avrokotlin.avro4k.schema.schemaFor
-import guru.zoroark.koa.dsl.OperationBuilder
-import guru.zoroark.koa.ktor.describe
-import guru.zoroark.koa.dsl.schema
+import guru.zoroark.tegral.openapi.dsl.OperationDsl
+import guru.zoroark.tegral.openapi.dsl.schema
+import guru.zoroark.tegral.openapi.ktor.describe
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
@@ -55,7 +55,9 @@ fun Routing.subscriptionRoutes(
       }.respond()
     } describe {
       slackUserId()
-      OK.value response ContentType.Application.Json.contentType { schema(subscriptionsExample) }
+      OK.value response {
+        json { schema(subscriptionsExample) }
+      }
       BadRequest.value response { }
     }
     
@@ -70,8 +72,10 @@ fun Routing.subscriptionRoutes(
       slackUserId()
       repository()
       OK.value response { }
-      BadRequest.value response ContentType.Application.Json.contentType {
-        schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo")))
+      BadRequest.value response {
+        json {
+          schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo")))
+        }
       }
     }
     
@@ -106,8 +110,8 @@ context(EffectScope<OutgoingContent>)
 private suspend fun ApplicationCall.slackUserId(): SlackUserId =
   SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
 
-private fun OperationBuilder.repository(): Unit =
-  "repository" requestBody { schema(Repository("arrow-kt", "arrow")) }
+private fun OperationDsl.repository(): Unit =
+  body { json { schema(Repository("arrow-kt", "arrow")) } }
 
-private fun OperationBuilder.slackUserId(): Unit =
+private fun OperationDsl.slackUserId(): Unit =
   "slackUserId" queryParameter { schema("slackUserId") }

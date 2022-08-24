@@ -39,7 +39,7 @@ repositories {
 
 jib {
   from {
-    image = "openjdk:11-jre-slim-buster"
+    image = "openjdk:17-slim-buster"
   }
   container {
     ports = listOf("8080")
@@ -52,8 +52,8 @@ jib {
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-  targetCompatibility = JavaVersion.VERSION_11
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
@@ -69,7 +69,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
 tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
-      jvmTarget = "${JavaVersion.VERSION_11}"
+      jvmTarget = "${JavaVersion.VERSION_17}"
       freeCompilerArgs = freeCompilerArgs + listOf(
         "-Xcontext-receivers",
         "-opt-in=kotlinx.coroutines.FlowPreview"
@@ -105,9 +105,8 @@ dependencies {
   implementation(libs.kotlinx.serialization.jsonpath)
   implementation(libs.micrometer.prometheus)
   implementation(libs.kotlinx.datetime)
-  implementation("guru.zoroark.koa:koa-dsl:main-SNAPSHOT")
-  implementation("guru.zoroark.koa:koa-ktor:main-SNAPSHOT")
-  implementation("guru.zoroark.koa:koa-ktor-ui:main-SNAPSHOT")
+  implementation(libs.tegral.openApi.ktor)
+  implementation(libs.tegral.openApi.ktor.ui)
 
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
