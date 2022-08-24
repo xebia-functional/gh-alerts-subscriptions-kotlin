@@ -96,10 +96,10 @@ private suspend fun committedMessages(
 ): Long = KafkaReceiver(
   kafka.consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
 ).withConsumer {
-  val partitions = Admin(AdminSettings(kafka.bootstrapServers)).use {
-    val description = it.describeTopic(kafka.subscriptionTopic.name)
-    description?.partitions().orEmpty().map {
-      TopicPartition(kafka.subscriptionTopic.name, it.partition())
+  val partitions = Admin(AdminSettings(kafka.bootstrapServers)).use { admin ->
+    val description = admin.describeTopic(kafka.subscriptionTopic.name)
+    description?.partitions().orEmpty().map { info ->
+      TopicPartition(kafka.subscriptionTopic.name, info.partition())
     }.toSet()
   }
   committed(partitions).mapNotNull { (_, offset) ->
