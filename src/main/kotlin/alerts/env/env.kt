@@ -75,7 +75,7 @@ data class Env(
       AvroSerializer(valueSerializer)
     )
     
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "ForbiddenVoid")
     fun <V> producer(valueSerializer: KSerializer<V>): ProducerSettings<Nothing, V> =
       ProducerSettings<Void, V>(
         bootstrapServers,

@@ -8,38 +8,38 @@ import alerts.respond
 import alerts.service.RepoNotFound
 import alerts.service.SubscriptionError
 import alerts.service.SubscriptionService
+import alerts.service.UserNotFound
 import alerts.statusCode
 import arrow.core.Either
-import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import com.github.avrokotlin.avro4k.schema.schemaFor
 import guru.zoroark.tegral.openapi.dsl.OperationDsl
 import guru.zoroark.tegral.openapi.dsl.schema
 import guru.zoroark.tegral.openapi.ktor.describe
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.NoContent
 import io.ktor.http.HttpStatusCode.Companion.NotFound
 import io.ktor.http.HttpStatusCode.Companion.OK
-import io.ktor.http.content.OutgoingContent
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
+import io.ktor.server.resources.delete
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class Subscriptions(val subscriptions: List<Subscription>)
+
+private const val INCORRECT_REPO_MESSAGE =
+  "The body of the request must be a JSON object with an 'owner', and 'name' field."
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
@@ -47,55 +47,52 @@ fun Routing.subscriptionRoutes(
   timeZone: TimeZone = TimeZone.UTC,
 ) =
   route("subscription") {
-    get {
+    get<Routes.Subscription> { req ->
       either {
-        val slackUserId = call.slackUserId()
-        val subscriptions = service.findAll(slackUserId).mapLeft { statusCode(BadRequest) }.bind()
+        val subscriptions = service.findAll(req.slackUserId).mapLeft { statusCode(BadRequest) }.bind()
         Subscriptions(subscriptions)
       }.respond()
     } describe {
       slackUserId()
-      OK.value response {
-        json { schema(subscriptionsExample) }
-      }
+      OK.value response { json { schema(subscriptionsExample) } }
       BadRequest.value response { }
     }
     
-    post {
+    post<Routes.Subscription> { req ->
       either {
-        val slackUserId = call.slackUserId()
         val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
-        service.subscribe(slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
+        service.subscribe(req.slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
           .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
       }.respond(Created)
     } describe {
       slackUserId()
       repository()
-      OK.value response { }
+      incorrectRepoBodyReturn()
+      repoNotFoundReturn()
+      githubErrorReturn()
+      Created.value response {
+        description = "Successfully subscribed to repository"
+      }
       BadRequest.value response {
-        json {
-          schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo")))
-        }
+        json { schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo"))) }
       }
     }
     
-    delete {
+    delete<Routes.Subscription> { req ->
       either {
-        val slackUserId = call.slackUserId()
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
-        service.unsubscribe(slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
+        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
+          badRequest(INCORRECT_REPO_MESSAGE)
+        }
+        service.unsubscribe(req.slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
       }.respond(NoContent)
     } describe {
       slackUserId()
       repository()
+      incorrectRepoBodyReturn()
+      repoNotFoundReturn()
+      slackUserNotFoundReturn()
       NoContent.value response {
         description = "Deleted the subscription for the given user."
-      }
-      BadRequest.value response {
-        description = "Did not receive a correct slackUserId or repository."
-      }
-      NotFound.value response {
-        description = "No subscription to delete was found for the given user, or repository."
       }
     }
   }
@@ -103,12 +100,24 @@ fun Routing.subscriptionRoutes(
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
 
-private fun SubscriptionError.toJson(): String =
-  Json.encodeToString(SubscriptionError.serializer(), this)
+private fun OperationDsl.incorrectRepoBodyReturn(): Unit =
+  BadRequest.value response { json { schema(INCORRECT_REPO_MESSAGE) } }
 
-context(EffectScope<OutgoingContent>)
-private suspend fun ApplicationCall.slackUserId(): SlackUserId =
-  SlackUserId(ensureNotNull(request.queryParameters["slackUserId"]) { statusCode(BadRequest) })
+private fun OperationDsl.repoNotFoundReturn(): Unit =
+  BadRequest.value response {
+    json { schema(RepoNotFound(Repository("non-existing-owner", "repo"))) }
+  }
+
+private fun OperationDsl.slackUserNotFoundReturn(): Unit =
+  NotFound.value response {
+    json { schema(UserNotFound(SlackUserId("slack-user-id"))) }
+  }
+
+private fun OperationDsl.githubErrorReturn(): Unit =
+  BadRequest.value response {
+    json { schema(HttpStatusCode.BadGateway) }
+    description = "Github could not confirm the repository existence"
+  }
 
 private fun OperationDsl.repository(): Unit =
   body { json { schema(Repository("arrow-kt", "arrow")) } }
