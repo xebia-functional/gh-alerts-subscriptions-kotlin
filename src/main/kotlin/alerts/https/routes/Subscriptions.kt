@@ -29,7 +29,6 @@ import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.route
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -45,57 +44,56 @@ fun Routing.subscriptionRoutes(
   service: SubscriptionService,
   clock: Clock = Clock.System,
   timeZone: TimeZone = TimeZone.UTC,
-) =
-  route("subscription") {
-    get<Routes.Subscription> { req ->
-      either {
-        val subscriptions = service.findAll(req.slackUserId).mapLeft { statusCode(BadRequest) }.bind()
-        Subscriptions(subscriptions)
-      }.respond()
-    } describe {
-      slackUserId()
-      OK.value response { json { schema(subscriptionsExample) } }
-      BadRequest.value response { }
+) {
+  get<Routes.Subscription> { req ->
+    either {
+      val subscriptions = service.findAll(req.slackUserId).mapLeft { statusCode(BadRequest) }.bind()
+      Subscriptions(subscriptions)
+    }.respond()
+  } describe {
+    slackUserId()
+    OK.value response { json { schema(subscriptionsExample) } }
+    BadRequest.value response { }
+  }
+
+  post<Routes.Subscription> { req ->
+    either {
+      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
+      service.subscribe(req.slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
+        .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
+    }.respond(Created)
+  } describe {
+    slackUserId()
+    repository()
+    incorrectRepoBodyReturn()
+    repoNotFoundReturn()
+    githubErrorReturn()
+    Created.value response {
+      description = "Successfully subscribed to repository"
     }
-    
-    post<Routes.Subscription> { req ->
-      either {
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
-        service.subscribe(req.slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
-          .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
-      }.respond(Created)
-    } describe {
-      slackUserId()
-      repository()
-      incorrectRepoBodyReturn()
-      repoNotFoundReturn()
-      githubErrorReturn()
-      Created.value response {
-        description = "Successfully subscribed to repository"
-      }
-      BadRequest.value response {
-        json { schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo"))) }
-      }
-    }
-    
-    delete<Routes.Subscription> { req ->
-      either {
-        val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
-          badRequest(INCORRECT_REPO_MESSAGE)
-        }
-        service.unsubscribe(req.slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
-      }.respond(NoContent)
-    } describe {
-      slackUserId()
-      repository()
-      incorrectRepoBodyReturn()
-      repoNotFoundReturn()
-      slackUserNotFoundReturn()
-      NoContent.value response {
-        description = "Deleted the subscription for the given user."
-      }
+    BadRequest.value response {
+      json { schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo"))) }
     }
   }
+
+  delete<Routes.Subscription> { req ->
+    either {
+      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
+        badRequest(INCORRECT_REPO_MESSAGE)
+      }
+      service.unsubscribe(req.slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
+    }.respond(NoContent)
+  } describe {
+    slackUserId()
+    repository()
+    incorrectRepoBodyReturn()
+    repoNotFoundReturn()
+    slackUserNotFoundReturn()
+    NoContent.value response {
+      description = "Deleted the subscription for the given user."
+    }
+  }
+}
 
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
