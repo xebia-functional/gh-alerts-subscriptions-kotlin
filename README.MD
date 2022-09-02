@@ -20,16 +20,10 @@ NOTE: Gradle does not respect propagating SIGTERM to the running application, so
 
 ##### Running the application in Docker
 
-Generate an assembly of the application
-
-```shell
-./gradlew assemble
-```
-
 Publish the docker image locally
 
 ```shell
-./gradlew jibDockerBuild
+./gradlew publishImageToLocalRegistry
 ```
 
 Start up services (Postgres, Kafka, Schema Registry, etc.) with the app
