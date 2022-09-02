@@ -89,7 +89,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
     persistence.subscribe(userId, subs).shouldBeRight(Unit)
-    persistence.findAll(userId).shouldBe(subs)
+    persistence.findAll(userId).map(Subscription::repository) shouldBe subs.map(Subscription::repository)
   }
   
   "unsubscribe - emptyList" {
@@ -109,7 +109,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
     persistence.subscribe(userId, subs).shouldBeRight(Unit)
-    persistence.findAll(userId) shouldBe subs
+    persistence.findAll(userId).map(Subscription::repository) shouldBe subs.map(Subscription::repository)
     persistence.unsubscribe(userId, subs.map { it.repository })
     persistence.findAll(userId).shouldBeEmpty()
   }
