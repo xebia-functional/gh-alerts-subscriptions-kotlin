@@ -16,7 +16,6 @@ hikari = "5.0.1"
 postgresql = "42.5.0"
 kotest-arrow = "1.2.5"
 kotest-arrow-fx = "1.1.0.145-SNAPSHOT"
-jib = "3.2.1"
 flyway = "9.2.2"
 kotlin-logging = "2.1.23"
 avro4k = "1.6.0"
@@ -108,4 +107,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
-jib = { id = "com.google.cloud.tools.jib", version.ref = "jib" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
