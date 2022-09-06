@@ -6,15 +6,16 @@ import alerts.persistence.SlackUserId
 import alerts.persistence.Subscription
 import alerts.respond
 import alerts.service.RepoNotFound
+import alerts.service.SubscriptionError
 import alerts.service.SubscriptionService
 import alerts.service.UserNotFound
 import alerts.statusCode
 import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import guru.zoroark.koa.dsl.OperationBuilder
-import guru.zoroark.koa.ktor.describe
-import guru.zoroark.koa.dsl.schema
+import guru.zoroark.tegral.openapi.dsl.OperationDsl
+import guru.zoroark.tegral.openapi.dsl.schema
+import guru.zoroark.tegral.openapi.ktor.describe
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
@@ -50,33 +51,31 @@ fun Routing.subscriptionRoutes(
       Subscriptions(subscriptions)
     }.respond()
   } describe {
-    slackUserIdQuery()
-    slackUserNotFoundReturn()
-    OK.value response ContentType.Application.Json.contentType {
-      schema(subscriptionsExample)
-      description = "Returns all subscriptions for the given slack user id"
-    }
+    slackUserId()
+    OK.value response { json { schema(subscriptionsExample) } }
+    BadRequest.value response { }
   }
-  
+
   post<Routes.Subscription> { req ->
     either {
-      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
-        badRequest(INCORRECT_REPO_MESSAGE)
-      }
+      val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) { statusCode(BadRequest) }
       service.subscribe(req.slackUserId, Subscription(repository, clock.now().toLocalDateTime(timeZone)))
         .mapLeft { badRequest(it.toJson(), ContentType.Application.Json) }.bind()
     }.respond(Created)
   } describe {
-    slackUserIdQuery()
-    repositoryBody()
+    slackUserId()
+    repository()
     incorrectRepoBodyReturn()
     repoNotFoundReturn()
     githubErrorReturn()
     Created.value response {
       description = "Successfully subscribed to repository"
     }
+    BadRequest.value response {
+      json { schema<SubscriptionError>(RepoNotFound(Repository("non-existing-owner", "repo"))) }
+    }
   }
-  
+
   delete<Routes.Subscription> { req ->
     either {
       val repository = ensureNotNull(Either.catch { call.receive<Repository>() }.orNull()) {
@@ -85,8 +84,8 @@ fun Routing.subscriptionRoutes(
       service.unsubscribe(req.slackUserId, repository).mapLeft { statusCode(NotFound) }.bind()
     }.respond(NoContent)
   } describe {
-    slackUserIdQuery()
-    repositoryBody()
+    slackUserId()
+    repository()
     incorrectRepoBodyReturn()
     repoNotFoundReturn()
     slackUserNotFoundReturn()
@@ -99,27 +98,27 @@ fun Routing.subscriptionRoutes(
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
 
-private fun OperationBuilder.incorrectRepoBodyReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType { schema(INCORRECT_REPO_MESSAGE) }
+private fun OperationDsl.incorrectRepoBodyReturn(): Unit =
+  BadRequest.value response { json { schema(INCORRECT_REPO_MESSAGE) } }
 
-private fun OperationBuilder.repoNotFoundReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType {
-    schema(RepoNotFound(Repository("non-existing-owner", "repo")))
+private fun OperationDsl.repoNotFoundReturn(): Unit =
+  BadRequest.value response {
+    json { schema(RepoNotFound(Repository("non-existing-owner", "repo"))) }
   }
 
-private fun OperationBuilder.slackUserNotFoundReturn(): Unit =
-  NotFound.value response ContentType.Application.Json.contentType {
-    schema(UserNotFound(SlackUserId("slack-user-id")))
+private fun OperationDsl.slackUserNotFoundReturn(): Unit =
+  NotFound.value response {
+    json { schema(UserNotFound(SlackUserId("slack-user-id"))) }
   }
 
-private fun OperationBuilder.githubErrorReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType {
-    schema(HttpStatusCode.BadGateway)
+private fun OperationDsl.githubErrorReturn(): Unit =
+  BadRequest.value response {
+    json { schema(HttpStatusCode.BadGateway) }
     description = "Github could not confirm the repository existence"
   }
 
-private fun OperationBuilder.repositoryBody(): Unit =
-  "repository" requestBody { schema(Repository("arrow-kt", "arrow")) }
+private fun OperationDsl.repository(): Unit =
+  body { json { schema(Repository("arrow-kt", "arrow")) } }
 
-private fun OperationBuilder.slackUserIdQuery(): Unit =
+private fun OperationDsl.slackUserId(): Unit =
   "slackUserId" queryParameter { schema("slackUserId") }

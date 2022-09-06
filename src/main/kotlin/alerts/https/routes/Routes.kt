@@ -10,10 +10,7 @@ object Routes {
   
   @Resource("/metrics")
   class Metrics
-  
-  @Resource("/openapi")
-  class OpenApi
-  
+
   @Resource("/swagger")
   class Swagger
   

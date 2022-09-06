@@ -3,7 +3,7 @@ name: "build"
 on: push
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx5g -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx5g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v3.4.1
         with:
           distribution: 'zulu'
-          java-version: 11
+          java-version: 17
 
       - name: Build
         uses: gradle/gradle-build-action@v2.3.0

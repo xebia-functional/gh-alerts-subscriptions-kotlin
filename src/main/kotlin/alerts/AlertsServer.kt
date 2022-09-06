@@ -6,10 +6,8 @@ import alerts.https.routes.metricsRoute
 import alerts.https.routes.openApiRoutes
 import alerts.https.routes.slackRoutes
 import alerts.https.routes.subscriptionRoutes
-import guru.zoroark.koa.ktor.Koa
-import guru.zoroark.koa.ktor.respondOpenApiDocument
-import guru.zoroark.koa.ktor.ui.KoaSwaggerUi
-import guru.zoroark.koa.ktor.ui.swaggerUi
+import guru.zoroark.tegral.openapi.ktor.TegralOpenApiKtor
+import guru.zoroark.tegral.openapi.ktorui.TegralSwaggerUiKtor
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -42,11 +40,11 @@ fun Application.configure() {
     )
   }
   install(Resources)
-  install(Koa) {
+  install(TegralOpenApiKtor) {
     title = "GitHub alerts API"
     version = "v1"
   }
-  install(KoaSwaggerUi)
+  install(TegralSwaggerUiKtor)
 }
 
 private fun Application.metrics(dependencies: Dependencies) {
