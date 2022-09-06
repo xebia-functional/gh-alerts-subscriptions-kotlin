@@ -6,10 +6,16 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   id(libs.plugins.kotlin.jvm.pluginId)
   alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.sqldelight)
-  alias(libs.plugins.jib)
   alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.kover)
+  alias(libs.plugins.ktor)
   id(libs.plugins.detekt.pluginId)
+}
+
+buildscript {
+  dependencies {
+    classpath("org.apache.commons:commons-compress:1.21")
+  }
 }
 
 val main by extra("alerts.MainKt")
@@ -37,17 +43,19 @@ repositories {
   maven(url = "https://jitpack.io")
 }
 
-jib {
-  from {
-    image = "openjdk:17-slim-buster"
-  }
-  container {
-    ports = listOf("8080")
-    mainClass = main
-  }
-  to {
-    image = "ghcr.io/47deg/github-alerts-subscriptions-kotlin"
-    tags = setOf("latest")
+ktor {
+  docker {
+    jreVersion.set(io.ktor.plugin.features.JreVersion.JRE_11)
+    localImageName.set("github-alerts-subscriptions-kotlin")
+    imageTag.set("latest")
+    externalRegistry.set(
+      io.ktor.plugin.features.DockerImageRegistry.googleContainerRegistry(
+        projectName = provider { "47deg" },
+        appName = provider { "github-alerts-subscriptions-kotlin" },
+        username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+        password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
+      )
+    )
   }
 }
 
