@@ -41,6 +41,7 @@ repositories {
   // For Kotest Extensions Arrow Fx, remove if 1.1.3 is released
   maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
   maven(url = "https://jitpack.io")
+  maven(url = "https://s01.oss.sonatype.org/content/repositories/snapshots/")
 }
 
 ktor {
@@ -60,24 +61,14 @@ ktor {
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_17
-  targetCompatibility = JavaVersion.VERSION_17
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
-  kotlinOptions.freeCompilerArgs += listOf(
-    "-Xopt-in=kotlin.RequiresOptIn",
-    "-Xopt-in=kotlin.OptIn",
-    "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-    "-Xopt-in=kotlinx.coroutines.ObsoleteCoroutinesApi",
-    "-Xopt-in=kotlinx.coroutines.FlowPreview"
-  )
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
 }
 
 tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
-      jvmTarget = "${JavaVersion.VERSION_17}"
+      jvmTarget = "${JavaVersion.VERSION_11}"
       freeCompilerArgs = freeCompilerArgs + listOf(
         "-Xcontext-receivers",
         "-opt-in=kotlinx.coroutines.FlowPreview"
