@@ -1,14 +1,9 @@
-package alerts.https.routes
+package alerts.subscription
 
 import alerts.badRequest
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
+import alerts.env.Routes
+import alerts.user.SlackUserId
 import alerts.respond
-import alerts.service.RepoNotFound
-import alerts.service.SubscriptionError
-import alerts.service.SubscriptionService
-import alerts.service.UserNotFound
 import alerts.statusCode
 import arrow.core.Either
 import arrow.core.continuations.either
@@ -32,13 +27,6 @@ import io.ktor.server.routing.Routing
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class Subscriptions(val subscriptions: List<Subscription>)
-
-private const val INCORRECT_REPO_MESSAGE =
-  "The body of the request must be a JSON object with an 'owner', and 'name' field."
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
@@ -95,6 +83,9 @@ fun Routing.subscriptionRoutes(
   }
 }
 
+private const val INCORRECT_REPO_MESSAGE =
+  "The body of the request must be a JSON object with an 'owner', and 'name' field."
+
 private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
 
@@ -108,7 +99,7 @@ private fun OperationDsl.repoNotFoundReturn(): Unit =
 
 private fun OperationDsl.slackUserNotFoundReturn(): Unit =
   NotFound.value response {
-    json { schema(UserNotFound(SlackUserId("slack-user-id"))) }
+    json { schema(SlackUserNotFound(SlackUserId("slack-user-id"))) }
   }
 
 private fun OperationDsl.githubErrorReturn(): Unit =

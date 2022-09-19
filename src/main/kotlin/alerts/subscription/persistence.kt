@@ -1,29 +1,17 @@
-package alerts.persistence
+package alerts.subscription
 
+import alerts.user.UserId
+import alerts.catch
 import alerts.sqldelight.RepositoriesQueries
 import alerts.sqldelight.SubscriptionsQueries
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import arrow.core.traverse
-import com.github.avrokotlin.avro4k.AvroNamespace
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
-import kotlinx.serialization.Serializable
 import org.postgresql.util.PSQLException
-
-@JvmInline
-value class RepositoryId(val serial: Long)
-
-@Serializable
-@AvroNamespace("alerts.domain.repository")
-data class Repository(val owner: String, val name: String)
-
-@Serializable
-data class Subscription(val repository: Repository, val subscribedAt: LocalDateTime)
-
-data class UserNotFound(val userId: UserId)
+import org.postgresql.util.PSQLState
 
 interface SubscriptionsPersistence {
   suspend fun findAll(user: UserId): List<Subscription>
@@ -38,10 +26,10 @@ interface SubscriptionsPersistence {
     unsubscribe(user, listOf(repositories))
 }
 
-fun subscriptionsPersistence(
-  subscriptions: SubscriptionsQueries,
-  repositories: RepositoriesQueries,
-): SubscriptionsPersistence = object : SubscriptionsPersistence {
+class SqlDelightSubscriptionsPersistence(
+  private val subscriptions: SubscriptionsQueries,
+  private val repositories: RepositoriesQueries,
+): SubscriptionsPersistence {
   override suspend fun findAll(user: UserId): List<Subscription> =
     subscriptions.findAll(user) { owner, repository, subscribedAt ->
       Subscription(Repository(owner, repository), subscribedAt.toKotlinLocalDateTime())
@@ -68,7 +56,7 @@ fun subscriptionsPersistence(
     }
   
   private fun PSQLException.isUserIdForeignKeyViolation(): Boolean =
-    isForeignKeyViolation() && message?.contains("subscriptions_user_id_fkey") == true
+    sqlState == PSQLState.FOREIGN_KEY_VIOLATION.state && message?.contains("subscriptions_user_id_fkey") == true
   
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) =
     if (repositories.isEmpty()) Unit else subscriptions.transaction {

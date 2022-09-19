@@ -4,17 +4,21 @@ import alerts.KafkaContainer
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.Env
-import alerts.env.sqlDelight
-import alerts.https.client.GithubError
-import alerts.kafka.SubscriptionEvent
-import alerts.kafka.SubscriptionEventRecord
-import alerts.kafka.SubscriptionKey
-import alerts.kafka.SubscriptionProducer
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
-import alerts.persistence.subscriptionsPersistence
-import alerts.persistence.userPersistence
+import alerts.env.SqlDelight
+import alerts.github.GithubError
+import alerts.subscription.SubscriptionEvent
+import alerts.subscription.SubscriptionEventRecord
+import alerts.subscription.SubscriptionKey
+import alerts.subscription.SubscriptionProducer
+import alerts.subscription.Repository
+import alerts.user.SlackUserId
+import alerts.subscription.Subscription
+import alerts.subscription.SubscriptionsPersistence
+import alerts.subscription.RepoNotFound
+import alerts.subscription.SqlDelightSubscriptionsPersistence
+import alerts.subscription.SubscriptionService
+import alerts.user.SqlDelightUserPersistence
+import alerts.user.UserPersistence
 import arrow.core.left
 import arrow.core.right
 import io.github.nomisRev.kafka.Admin
@@ -37,13 +41,13 @@ import org.apache.kafka.common.TopicPartition
 class SubscriptionServiceSpec : StringSpec({
   val kafka by resource(KafkaContainer.resource())
   val postgres by resource(PostgreSQLContainer.resource())
-  val sqlDelight by resource(sqlDelight(postgres.config()))
-  val producer by resource(SubscriptionProducer.resource(kafka))
+  val sqlDelight by resource(SqlDelight(postgres.config()))
+  val producer by resource(SubscriptionProducer(kafka))
   
   val subscriptions by lazy {
-    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+    SqlDelightSubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }
-  val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
+  val users by lazy { SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
   
   afterTest { postgres.clear() }
   

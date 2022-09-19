@@ -1,7 +1,11 @@
 package alerts.kafka
 
 import alerts.KafkaContainer
-import alerts.persistence.SlackUserId
+import alerts.github.EnvGithubEventProcessor
+import alerts.github.GithubEvent
+import alerts.github.GithubEventProcessor
+import alerts.github.SlackNotification
+import alerts.user.SlackUserId
 import io.github.nomisRev.kafka.produce
 import io.github.nomisRev.kafka.receiver.KafkaReceiver
 import io.kotest.assertions.arrow.fx.coroutines.resource
@@ -18,7 +22,7 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 class GithubEventProcessorSpec : StringSpec({
   val kafka by resource(KafkaContainer.resource())
-  val processor by lazy { githubEventProcessor(kafka) }
+  val processor by lazy { EnvGithubEventProcessor(kafka) }
   val eventProducerSetting by lazy { kafka.producer(GithubEvent.serializer()) }
   val notificationSettings by lazy { kafka.consumer(SlackNotification.serializer()) }
   

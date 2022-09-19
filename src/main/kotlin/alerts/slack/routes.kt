@@ -1,45 +1,28 @@
-package alerts.https.routes
+package alerts.slack
 
 import alerts.badRequest
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
+import alerts.env.Routes
+import alerts.subscription.Repository
+import alerts.user.SlackUserId
+import alerts.subscription.Subscription
 import alerts.respond
-import alerts.service.SubscriptionService
+import alerts.subscription.SubscriptionService
 import alerts.statusCode
 import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.http.Parameters
-import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveParameters
 import io.ktor.server.resources.get
-import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.get
-import io.ktor.util.pipeline.PipelineContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.Serializable
-
-@Serializable
-enum class Command { Subscribe }
-
-@Serializable
-data class SlashCommand(
-  val userId: SlackUserId,
-  val command: Command,
-  val repo: Repository,
-)
 
 fun Routing.slackRoutes(service: SubscriptionService) =
   get<Routes.Slack> {

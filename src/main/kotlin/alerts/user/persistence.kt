@@ -1,19 +1,8 @@
-package alerts.persistence
+package alerts.user
 
 import alerts.sqldelight.UsersQueries
 import arrow.core.NonEmptyList
 import io.prometheus.client.Counter
-import kotlinx.serialization.Serializable
-
-@JvmInline
-@Serializable
-value class UserId(val serial: Long)
-
-@JvmInline
-@Serializable
-value class SlackUserId(val slackUserId: String)
-
-data class User(val userId: UserId, val slackUserId: SlackUserId)
 
 interface UserPersistence {
   suspend fun find(userId: UserId): User?
@@ -22,7 +11,8 @@ interface UserPersistence {
   suspend fun insertSlackUser(slackUserId: SlackUserId): User
 }
 
-fun userPersistence(queries: UsersQueries, slackUsersCounter: Counter): UserPersistence = object : UserPersistence {
+class SqlDelightUserPersistence(private val queries: UsersQueries, private val slackUsersCounter: Counter) :
+  UserPersistence {
   override suspend fun find(userId: UserId): User? =
     queries.find(userId, ::User).executeAsOneOrNull()
   

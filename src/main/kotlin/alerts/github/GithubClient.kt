@@ -1,4 +1,4 @@
-package alerts.https.client
+package alerts.github
 
 import alerts.env.Env
 import arrow.core.Either
@@ -21,34 +21,31 @@ import mu.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
-@JvmInline
-value class GithubError(val statusCode: HttpStatusCode)
-
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
-  
-  companion object {
-    fun resource(
-      config: Env.Github,
-      retryPolicy: Schedule<Throwable, Unit> = defaultPolicy,
-    ): Resource<GithubClient> = resource {
-      val client = Resource.fromAutoCloseable {
-        HttpClient {
-          install(HttpCache)
-          install(DefaultRequest) { url(config.uri) }
-        }
-      }.bind()
-      val logger = KotlinLogging.logger { }
-      DefaultGithubClient(config, retryPolicy, client, logger)
-    }
-    
-    @OptIn(ExperimentalTime::class)
-    private val defaultPolicy: Schedule<Throwable, Unit> =
-      Schedule.recurs<Throwable>(3)
-        .and(Schedule.exponential(1.seconds))
-        .void()
-  }
 }
+
+fun GithubClient(
+  config: Env.Github,
+  retryPolicy: Schedule<Throwable, Unit> = DEFAULT_GITHUB_RETRY_SCHEDULE
+): Resource<GithubClient> = resource {
+  val client = Resource.fromAutoCloseable {
+    HttpClient {
+      install(HttpCache)
+      install(DefaultRequest) { url(config.uri) }
+    }
+  }.bind()
+  val logger = KotlinLogging.logger { }
+  DefaultGithubClient(config, retryPolicy, client, logger)
+}
+
+private const val DEFAULT_GITHUB_RETRY_COUNT = 3
+
+@OptIn(ExperimentalTime::class)
+private val DEFAULT_GITHUB_RETRY_SCHEDULE: Schedule<Throwable, Unit> =
+  Schedule.recurs<Throwable>(DEFAULT_GITHUB_RETRY_COUNT)
+    .and(Schedule.exponential(1.seconds))
+    .void()
 
 private class DefaultGithubClient(
   private val config: Env.Github,
