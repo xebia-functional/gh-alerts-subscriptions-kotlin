@@ -6,10 +6,16 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   id(libs.plugins.kotlin.jvm.pluginId)
   alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.sqldelight)
-  alias(libs.plugins.jib)
   alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.kover)
+  alias(libs.plugins.ktor)
   id(libs.plugins.detekt.pluginId)
+}
+
+buildscript {
+  dependencies {
+    classpath("org.apache.commons:commons-compress:1.21")
+  }
 }
 
 val main by extra("alerts.MainKt")
@@ -37,29 +43,31 @@ repositories {
   maven(url = "https://jitpack.io")
 }
 
-jib {
-  from {
-    image = "openjdk:11-jre-slim-buster"
-  }
-  container {
-    ports = listOf("8080")
-    mainClass = main
-  }
-  to {
-    image = "ghcr.io/47deg/github-alerts-subscriptions-kotlin"
-    tags = setOf("latest")
+ktor {
+  docker {
+    jreVersion.set(io.ktor.plugin.features.JreVersion.JRE_11)
+    localImageName.set("github-alerts-subscriptions-kotlin")
+    imageTag.set("latest")
+    externalRegistry.set(
+      io.ktor.plugin.features.DockerImageRegistry.googleContainerRegistry(
+        projectName = provider { "47deg" },
+        appName = provider { "github-alerts-subscriptions-kotlin" },
+        username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+        password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
+      )
+    )
   }
 }
 
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-  targetCompatibility = JavaVersion.VERSION_11
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks {
   withType<KotlinCompile>().configureEach {
     kotlinOptions {
-      jvmTarget = "${JavaVersion.VERSION_11}"
+      jvmTarget = "${JavaVersion.VERSION_17}"
       freeCompilerArgs = freeCompilerArgs + listOf(
         "-Xcontext-receivers",
         "-opt-in=kotlinx.coroutines.FlowPreview"
@@ -70,8 +78,8 @@ tasks {
   test {
     useJUnitPlatform()
     extensions.configure(KoverTaskExtension::class) {
-      includes = listOf("alerts.*")
-      excludes = listOf("alerts.sqldelight")
+      includes.add("alerts.*")
+      excludes.add("alerts.sqldelight")
     }
   }
 }
@@ -95,9 +103,8 @@ dependencies {
   implementation(libs.kotlinx.serialization.jsonpath)
   implementation(libs.micrometer.prometheus)
   implementation(libs.kotlinx.datetime)
-  implementation("guru.zoroark.koa:koa-dsl:main-SNAPSHOT")
-  implementation("guru.zoroark.koa:koa-ktor:main-SNAPSHOT")
-  implementation("guru.zoroark.koa:koa-ktor-ui:main-SNAPSHOT")
+  implementation(libs.tegral.openApi.ktor)
+  implementation(libs.tegral.openApi.ktor.ui)
 
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)

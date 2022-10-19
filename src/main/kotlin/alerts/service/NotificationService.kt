@@ -21,6 +21,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatten
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -60,14 +63,16 @@ private class Notifications(
     val scope = coroutineScope(Dispatchers.IO)
     return processor.process(::findSubscribers).launchIn(scope)
   }
-  
-  private suspend fun findSubscribers(event: GithubEvent): Flow<SlackNotification> =
-    effect {
-      val repo = extractRepo(event)
-      val userIds = service.findSubscribers(repo)
-      val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
-      slackUserIds.map { SlackNotification(it, event.event) }
-    }.fold({ error -> error.log() }, List<SlackNotification>::asFlow)
+
+  private fun findSubscribers(event: GithubEvent): Flow<SlackNotification> =
+    flow {
+      effect {
+        val repo = extractRepo(event)
+        val userIds = service.findSubscribers(repo)
+        val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
+        slackUserIds.map { SlackNotification(it, event.event) }
+      }.fold({ error -> error.log<SlackNotification>() }, { emit(it.asFlow()) })
+    }.flattenConcat()
   
   /**
    * Extract the [Repository] from the [GithubEvent].

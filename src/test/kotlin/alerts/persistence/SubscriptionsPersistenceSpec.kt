@@ -6,7 +6,7 @@ import alerts.env.sqlDelight
 import alerts.resource
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.result.shouldBeFailureOfType
+import io.kotest.matchers.result.shouldBeFailure
 import io.kotest.matchers.shouldBe
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -34,7 +34,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
-    runCatching { persistence.subscribe(nonExistingUser, subscriptions) }.shouldBeFailureOfType<PSQLException>()
+    runCatching { persistence.subscribe(nonExistingUser, subscriptions) }.shouldBeFailure<PSQLException>()
   }
   
   "subscribing existent user to subscription" {

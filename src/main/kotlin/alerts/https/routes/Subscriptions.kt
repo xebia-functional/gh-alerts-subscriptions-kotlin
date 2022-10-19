@@ -14,10 +14,9 @@ import alerts.service.SubscriptionService
 import alerts.slackUserId
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
-import guru.zoroark.koa.dsl.OperationBuilder
-import guru.zoroark.koa.ktor.describe
-import guru.zoroark.koa.dsl.schema
-import io.ktor.http.ContentType
+import guru.zoroark.tegral.openapi.dsl.OperationDsl
+import guru.zoroark.tegral.openapi.dsl.schema
+import guru.zoroark.tegral.openapi.ktor.describe
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
@@ -28,12 +27,10 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.server.application.call
 import io.ktor.server.request.ContentTransformationException
 import io.ktor.server.request.receive
-import io.ktor.server.routing.Route
+import io.ktor.server.resources.delete
+import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
-import io.ktor.server.routing.delete
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -45,9 +42,8 @@ data class Subscriptions(val subscriptions: List<Subscription>)
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
   time: Time = Time.UTC,
-): Route =
-  route("subscription") {
-    get {
+) {
+    get<Routes.Subscription> {
       respond {
         val slackUserId = slackUserId()
         val subscriptions = service.findAll(slackUserId)
@@ -56,13 +52,13 @@ fun Routing.subscriptionRoutes(
     } describe {
       slackUserIdQuery()
       slackUserNotFoundReturn()
-      OK.value response ContentType.Application.Json.contentType {
-        schema(subscriptionsExample)
+      OK.value response {
+        json { schema(subscriptionsExample) }
         description = "Returns all subscriptions for the given slack user id"
       }
     }
-    
-    post {
+
+    post<Routes.Subscription> {
       respond(Created) {
         val slackUserId = slackUserId()
         val repository = receiveRepository()
@@ -70,7 +66,7 @@ fun Routing.subscriptionRoutes(
       }
     } describe {
       slackUserIdQuery()
-      repositoryBody()
+      repository()
       incorrectRepoBodyReturn()
       repoNotFoundReturn()
       githubErrorReturn()
@@ -79,7 +75,7 @@ fun Routing.subscriptionRoutes(
       }
     }
     
-    delete {
+    delete<Routes.Subscription> {
       respond(NoContent) {
         val slackUserId = slackUserId()
         val repository = receiveRepository()
@@ -87,7 +83,7 @@ fun Routing.subscriptionRoutes(
       }
     } describe {
       slackUserIdQuery()
-      repositoryBody()
+      repository()
       incorrectRepoBodyReturn()
       repoNotFoundReturn()
       slackUserNotFoundReturn()
@@ -100,36 +96,36 @@ fun Routing.subscriptionRoutes(
 private const val INCORRECT_REPO_MESSAGE =
   "The body of the request must be a JSON object with an 'owner', and 'name' field."
 
+private val subscriptionsExample =
+  Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
+
 context(EffectScope<OutgoingContent>)
   private suspend fun KtorCtx.receiveRepository(): Repository =
   effect<OutgoingContent, Repository> { call.receive() }
     .attempt { _: ContentTransformationException -> shift(badRequest(INCORRECT_REPO_MESSAGE)) }
     .bind()
 
-private val subscriptionsExample =
-  Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
-
-private fun OperationBuilder.incorrectRepoBodyReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType { schema(INCORRECT_REPO_MESSAGE) }
-
-private fun OperationBuilder.repoNotFoundReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType {
-    schema(RepoNotFound(Repository("non-existing-owner", "repo")))
-  }
-
-private fun OperationBuilder.slackUserNotFoundReturn(): Unit =
-  NotFound.value response ContentType.Application.Json.contentType {
-    schema(SlackUserNotFound(SlackUserId("slack-user-id")))
-  }
-
-private fun OperationBuilder.githubErrorReturn(): Unit =
-  BadRequest.value response ContentType.Application.Json.contentType {
-    schema(HttpStatusCode.BadGateway)
+private fun OperationDsl.githubErrorReturn(): Unit =
+  BadRequest.value response {
+    json { schema(HttpStatusCode.BadGateway) }
     description = "Github could not confirm the repository existence"
   }
 
-private fun OperationBuilder.repositoryBody(): Unit =
-  "repository" requestBody { schema(Repository("arrow-kt", "arrow")) }
+private fun OperationDsl.incorrectRepoBodyReturn(): Unit =
+  BadRequest.value response { json { schema(INCORRECT_REPO_MESSAGE) } }
 
-private fun OperationBuilder.slackUserIdQuery(): Unit =
+private fun OperationDsl.repoNotFoundReturn(): Unit =
+  BadRequest.value response {
+    json { schema(RepoNotFound(Repository("non-existing-owner", "repo"))) }
+  }
+
+private fun OperationDsl.repository(): Unit =
+  body { json { schema(Repository("arrow-kt", "arrow")) } }
+
+private fun OperationDsl.slackUserIdQuery(): Unit =
   "slackUserId" queryParameter { schema("slackUserId") }
+
+private fun OperationDsl.slackUserNotFoundReturn(): Unit =
+  NotFound.value response {
+    json { schema(SlackUserNotFound(SlackUserId("slack-user-id"))) }
+  }
