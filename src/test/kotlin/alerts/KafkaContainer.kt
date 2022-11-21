@@ -25,10 +25,10 @@ object KafkaContainer {
       { kafka(network).bind() },
       { schemaRegistry(network).bind() }
     ) { _, kafka, registry ->
-      Env.Kafka(
-        bootstrapServers = kafka.bootstrapServers,
-        schemaRegistryUrl = "http://${registry.host}:${registry.getMappedPort(8081)}"
-      )
+        Env.Kafka(
+          bootstrapServers = kafka.bootstrapServers,
+          schemaRegistryUrl = "http://${registry.host}:${registry.getMappedPort(8081)}"
+        )
     }
   }
   
