@@ -10,7 +10,7 @@ import kotlinx.coroutines.awaitCancellation
 fun main(): Unit = SuspendApp {
   val env = Env()
   resource {
-    val dependencies = Dependencies.resource(env).bind()
+    val dependencies = Dependencies(env).bind()
     dependencies.notifications.process().bind()
     server(Netty, port = env.http.port, host = env.http.host).bind()
       .application.alertsServer(dependencies)

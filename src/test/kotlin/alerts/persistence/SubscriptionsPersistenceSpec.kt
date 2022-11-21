@@ -2,7 +2,17 @@ package alerts.persistence
 
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
-import alerts.env.sqlDelight
+import alerts.env.SqlDelight
+import alerts.subscription.Repository
+import alerts.subscription.SqlDelightSubscriptionsPersistence
+import alerts.subscription.Subscription
+import alerts.subscription.UserNotFound
+import alerts.subscription.SubscriptionsPersistence
+import alerts.user.SlackUserId
+import alerts.user.SqlDelightUserPersistence
+import alerts.user.User
+import alerts.user.UserId
+import alerts.user.UserPersistence
 import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.assertions.arrow.fx.coroutines.resource
@@ -18,12 +28,12 @@ class SubscriptionsPersistenceSpec : StringSpec({
   
   val postgres by resource(PostgreSQLContainer.resource())
   val sqlDelight by resource(arrow.fx.coroutines.continuations.resource {
-    sqlDelight(postgres.config()).bind()
+    SqlDelight(postgres.config()).bind()
   })
   val persistence by lazy {
-    subscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+    SqlDelightSubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   }
-  val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
+  val users by lazy { SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
   
   afterTest { postgres.clear() }
   

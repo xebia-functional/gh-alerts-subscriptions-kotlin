@@ -2,7 +2,11 @@ package alerts.persistence
 
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
-import alerts.env.sqlDelight
+import alerts.env.SqlDelight
+import alerts.user.SlackUserId
+import alerts.user.SqlDelightUserPersistence
+import alerts.user.UserId
+import alerts.user.UserPersistence
 import arrow.core.nonEmptyListOf
 import io.kotest.assertions.arrow.fx.coroutines.resource
 import io.kotest.core.spec.style.StringSpec
@@ -15,8 +19,8 @@ class UserPersistenceSpec : StringSpec({
   val slackUserId = SlackUserId("test-user-id")
   val postgres by resource(PostgreSQLContainer.resource())
   val persistence by resource(arrow.fx.coroutines.continuations.resource {
-    val sqlDelight = sqlDelight(postgres.config()).bind()
-    userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
+    val sqlDelight = SqlDelight(postgres.config()).bind()
+    SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
   })
   
   afterTest { postgres.clear() }

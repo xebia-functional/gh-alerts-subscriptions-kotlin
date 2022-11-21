@@ -1,7 +1,11 @@
 package alerts.kafka
 
 import alerts.env.Env
-import alerts.persistence.catch
+import alerts.github.GithubEvent
+import alerts.github.SlackNotification
+import alerts.catch
+import alerts.subscription.SubscriptionEvent
+import alerts.subscription.SubscriptionKey
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.fromAutoCloseable
@@ -19,7 +23,6 @@ import mu.KLogger
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.errors.TopicExistsException
-import org.apache.kafka.common.serialization.VoidSerializer
 
 interface ManageTopics {
   suspend fun initializeTopics(): Unit

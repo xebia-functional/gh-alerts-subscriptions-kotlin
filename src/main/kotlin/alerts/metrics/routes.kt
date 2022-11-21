@@ -1,5 +1,6 @@
-package alerts.https.routes
+package alerts.metrics
 
+import alerts.env.Routes
 import io.ktor.server.application.call
 import io.ktor.server.resources.get
 import io.ktor.server.response.respond
