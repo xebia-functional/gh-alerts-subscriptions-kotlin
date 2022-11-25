@@ -1,22 +1,41 @@
 package alerts
 
+import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
-import io.kotest.assertions.arrow.fx.coroutines.resource
-import io.kotest.core.TestConfiguration
+import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.fromAutoCloseable
+import io.kotest.assertions.arrow.fx.coroutines.extension
+import io.kotest.core.extensions.LazyMaterialized
+import io.kotest.core.spec.Spec
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CompletableDeferred
-import kotlin.properties.ReadOnlyProperty
 
-fun <A> TestConfiguration.resource(block: suspend ResourceScope.() -> A): ReadOnlyProperty<Any?, A> =
-  resource(arrow.fx.coroutines.continuations.resource(block))
+suspend fun <A : AutoCloseable> ResourceScope.autoCloseable(autoCloseable: suspend () -> A): A =
+  Resource.fromAutoCloseable { autoCloseable() }.bind()
+
+suspend operator fun <A> LazyMaterialized<A>.invoke(): A = get()
+
+fun <MATERIALIZED> Spec.install(resource: Resource<MATERIALIZED>): LazyMaterialized<MATERIALIZED> {
+  val ext = resource.extension()
+  extensions(ext)
+  return ext.mount { }
+}
+
+fun <MATERIALIZED> Spec.install(
+  acquire: suspend ResourceScope.() -> MATERIALIZED,
+): LazyMaterialized<MATERIALIZED> {
+  val ext = resource(acquire).extension()
+  extensions(ext)
+  return ext.mount { }
+}
 
 suspend fun <A> testApp(
   setup: Application.() -> Unit,
-  test: suspend HttpClient.() -> A
+  test: suspend HttpClient.() -> A,
 ): A {
   val result = CompletableDeferred<A>()
   testApplication {
