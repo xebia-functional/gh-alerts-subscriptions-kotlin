@@ -13,7 +13,8 @@ import alerts.user.SlackUserId
 import alerts.user.SqlDelightUserPersistence
 import alerts.user.User
 import alerts.user.UserId
-import arrow.core.left
+import io.kotest.assertions.arrow.core.shouldBeLeft
+import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -46,8 +47,8 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
-    val expected = UserNotFound(User(UserId(0), SlackUserId("id"))).left()
-    persistence().subscribe(nonExistingUser, subscriptions) shouldBe expected
+    val expected = UserNotFound(User(UserId(0), SlackUserId("id")))
+    persistence().subscribe(nonExistingUser, subscriptions).shouldBeLeft(expected)
   }
   
   "subscribing existent user to subscription" {
@@ -56,7 +57,7 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
     val user = users().insertSlackUser(SlackUserId("test-user"))
-    persistence().subscribe(user, subscriptions)
+    persistence().subscribe(user, subscriptions).shouldBeRight(Unit)
   }
   
   "subscribing user to same subscription" {
@@ -65,14 +66,14 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
     )
     val user = users().insertSlackUser(SlackUserId("test-user"))
-    persistence().subscribe(user, subscriptions)
+    persistence().subscribe(user, subscriptions).shouldBeRight(Unit)
   }
   
   "subscribing user to same subscription twice" {
     val subscriptions = listOf(Subscription(arrow, LocalDateTime.now()))
     val user = users().insertSlackUser(SlackUserId("test-user"))
-    persistence().subscribe(user, subscriptions)
-    persistence().subscribe(user, subscriptions)
+    persistence().subscribe(user, subscriptions).shouldBeRight(Unit)
+    persistence().subscribe(user, subscriptions).shouldBeRight(Unit)
   }
   
   "findSubscribers - empty" {
@@ -99,8 +100,8 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrow, LocalDateTime.now()),
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
-    persistence().subscribe(user, subs)
-    persistence().findAll(user).shouldBe(subs)
+    persistence().subscribe(user, subs).shouldBeRight(Unit)
+    persistence().findAll(user).map(Subscription::repository) shouldBe subs.map(Subscription::repository)
   }
   
   "unsubscribe - emptyList" {
@@ -120,8 +121,8 @@ class SubscriptionsPersistenceSpec : StringSpec({
       Subscription(arrowAnalysis, LocalDateTime.now())
     )
     with(persistence()) {
-      subscribe(user, subs)
-      findAll(user) shouldBe subs
+      subscribe(user, subs).shouldBeRight(Unit)
+      findAll(user).map(Subscription::repository) shouldBe subs.map(Subscription::repository)
       unsubscribe(user, subs.map { it.repository })
       findAll(user).shouldBeEmpty()
     }
