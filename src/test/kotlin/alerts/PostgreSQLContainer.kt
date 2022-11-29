@@ -26,8 +26,8 @@ class PostgreSQLContainer private constructor() :
   }
   
   companion object {
-    suspend operator context(ResourceScope)
-    fun invoke(): PostgreSQLContainer =
+    context(ResourceScope)
+    suspend operator fun invoke(): PostgreSQLContainer =
       install({
         withContext(Dispatchers.IO) {
           PostgreSQLContainer()

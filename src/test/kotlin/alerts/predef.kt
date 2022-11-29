@@ -19,6 +19,14 @@ import kotlinx.coroutines.withContext
 import org.testcontainers.lifecycle.Startable
 
 @ResourceDSL
+suspend fun <A : AutoCloseable> ResourceScope.autoCloseable(autoCloseable: suspend () -> A): A =
+  install({ autoCloseable() }) { closeable, _ ->
+    withContext(Dispatchers.IO) {
+      closeable.close()
+    }
+  }
+
+@ResourceDSL
 suspend fun <A : Startable> ResourceScope.startable(startable: suspend () -> A): A =
   install({
     withContext(Dispatchers.IO) {
