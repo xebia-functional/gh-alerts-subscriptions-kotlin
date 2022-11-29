@@ -32,44 +32,38 @@ suspend fun KafkaContainer(): Env.Kafka {
 }
 
 context(ResourceScope)
-private suspend fun schemaRegistry(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
-  withContext(Dispatchers.IO) {
-    val schemaRegistryImage: DockerImageName =
-      if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-schema-registry-arm64:7.0.1")
-        .asCompatibleSubstituteFor("confluentinc/cp-schema-registry")
-      else DockerImageName.parse("confluentinc/cp-schema-registry:7.0.1")
-    
-    GenericContainer(schemaRegistryImage)
-      .withNetwork(network)
-      .withExposedPorts(8081)
-      .waitingFor(Wait.forHttp("/subjects"))
-      .withNetworkAliases("schema-registry")
-      .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
-      .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "broker:9092")
-      .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
-      .also { registry -> runInterruptible(block = registry::start) }
-  }
-}.bind()
+private suspend fun schemaRegistry(network: Network): GenericContainer<*> = startable {
+  val schemaRegistryImage: DockerImageName =
+    if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-schema-registry-arm64:7.0.1")
+      .asCompatibleSubstituteFor("confluentinc/cp-schema-registry")
+    else DockerImageName.parse("confluentinc/cp-schema-registry:7.0.1")
+  
+  GenericContainer(schemaRegistryImage)
+    .withNetwork(network)
+    .withExposedPorts(8081)
+    .waitingFor(Wait.forHttp("/subjects"))
+    .withNetworkAliases("schema-registry")
+    .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
+    .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "broker:9092")
+    .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://0.0.0.0:8081")
+}
 
 context(ResourceScope)
-private suspend fun zooKeeper(network: Network): GenericContainer<*> = Resource.fromAutoCloseable {
-  withContext(Dispatchers.IO) {
-    val zooKeeperImage: DockerImageName =
-      if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-zookeeper-arm64:7.0.1")
-        .asCompatibleSubstituteFor("confluentinc/cp-zookeeper")
-      else DockerImageName.parse("confluentinc/cp-zookeeper:7.0.1")
-    
-    GenericContainer(zooKeeperImage)
-      .withNetwork(network)
-      .withNetworkAliases("zookeeper")
-      .withEnv("ZOOKEEPER_CLIENT_PORT", "2181")
-      .withEnv("ZOOKEEPER_TICK_TIME", "2000")
-      .also { container -> runInterruptible(block = container::start) }
-  }
-}.bind()
+private suspend fun zooKeeper(network: Network): GenericContainer<*> = startable {
+  val zooKeeperImage: DockerImageName =
+    if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-zookeeper-arm64:7.0.1")
+      .asCompatibleSubstituteFor("confluentinc/cp-zookeeper")
+    else DockerImageName.parse("confluentinc/cp-zookeeper:7.0.1")
+  
+  GenericContainer(zooKeeperImage)
+    .withNetwork(network)
+    .withNetworkAliases("zookeeper")
+    .withEnv("ZOOKEEPER_CLIENT_PORT", "2181")
+    .withEnv("ZOOKEEPER_TICK_TIME", "2000")
+}
 
 context(ResourceScope)
-private suspend fun kafka(network: Network): KafkaContainer = Resource.fromAutoCloseable {
+private suspend fun kafka(network: Network): KafkaContainer = startable {
   withContext(Dispatchers.IO) {
     val kafkaImage: DockerImageName =
       if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-kafka-arm64:7.0.1")
@@ -84,6 +78,5 @@ private suspend fun kafka(network: Network): KafkaContainer = Resource.fromAutoC
       .withEnv("KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR", "1")
       .withEnv("KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR", "1")
       .withExternalZookeeper("zookeeper:2181")
-      .also { container -> runInterruptible(block = container::start) }
   }
-}.bind()
+}

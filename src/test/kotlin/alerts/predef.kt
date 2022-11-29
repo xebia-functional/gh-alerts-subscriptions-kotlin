@@ -1,6 +1,7 @@
 package alerts
 
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.continuations.ResourceDSL
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.fromAutoCloseable
@@ -13,9 +14,22 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import org.testcontainers.lifecycle.Startable
 
-suspend fun <A : AutoCloseable> ResourceScope.autoCloseable(autoCloseable: suspend () -> A): A =
-  Resource.fromAutoCloseable { autoCloseable() }.bind()
+@ResourceDSL
+suspend fun <A : Startable> ResourceScope.startable(startable: suspend () -> A): A =
+  install({
+    withContext(Dispatchers.IO) {
+      startable().also { runInterruptible(block = it::start) }
+    }
+  }) { closeable, _ ->
+    withContext(Dispatchers.IO) {
+      closeable.close()
+    }
+  }
 
 suspend operator fun <A> LazyMaterialized<A>.invoke(): A = get()
 

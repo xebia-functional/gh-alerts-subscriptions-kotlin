@@ -11,10 +11,6 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import org.testcontainers.containers.wait.strategy.Wait
 
-context(ResourceScope)
-suspend fun PostgreSQLContainer(): PostgreSQLContainer =
- PostgreSQLContainer.resource().bind()
-
 class PostgreSQLContainer private constructor() :
   org.testcontainers.containers.PostgreSQLContainer<PostgreSQLContainer>("postgres:14.1-alpine") {
   
@@ -30,8 +26,9 @@ class PostgreSQLContainer private constructor() :
   }
   
   companion object {
-    fun resource(): Resource<PostgreSQLContainer> =
-      Resource({
+    suspend operator context(ResourceScope)
+    fun invoke(): PostgreSQLContainer =
+      install({
         withContext(Dispatchers.IO) {
           PostgreSQLContainer()
             .waitingFor(Wait.forListeningPort())
