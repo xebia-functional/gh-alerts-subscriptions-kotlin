@@ -1,6 +1,5 @@
 package alerts
 
-import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceDSL
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
@@ -29,9 +28,7 @@ suspend fun <A : AutoCloseable> ResourceScope.autoCloseable(autoCloseable: suspe
 @ResourceDSL
 suspend fun <A : Startable> ResourceScope.startable(startable: suspend () -> A): A =
   install({
-    withContext(Dispatchers.IO) {
-      startable().also { runInterruptible(block = it::start) }
-    }
+    startable().also { runInterruptible(Dispatchers.IO, block = it::start) }
   }) { closeable, _ ->
     withContext(Dispatchers.IO) {
       closeable.close()
@@ -39,12 +36,6 @@ suspend fun <A : Startable> ResourceScope.startable(startable: suspend () -> A):
   }
 
 suspend operator fun <A> LazyMaterialized<A>.invoke(): A = get()
-
-fun <MATERIALIZED> Spec.install(resource: Resource<MATERIALIZED>): LazyMaterialized<MATERIALIZED> {
-  val ext = resource.extension()
-  extensions(ext)
-  return ext.mount { }
-}
 
 fun <MATERIALIZED> Spec.install(
   acquire: suspend ResourceScope.() -> MATERIALIZED,

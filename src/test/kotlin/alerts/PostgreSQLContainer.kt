@@ -27,15 +27,8 @@ class PostgreSQLContainer private constructor() :
   
   companion object {
     context(ResourceScope)
-    suspend operator fun invoke(): PostgreSQLContainer =
-      install({
-        withContext(Dispatchers.IO) {
-          PostgreSQLContainer()
-            .waitingFor(Wait.forListeningPort())
-            .also { container -> runInterruptible(block = container::start) }
-        }
-      }) { container, _ ->
-        withContext(Dispatchers.IO) { container.close() }
-      }
+    suspend operator fun invoke(): PostgreSQLContainer = startable {
+      PostgreSQLContainer().waitingFor(Wait.forListeningPort())
+    }
   }
 }
