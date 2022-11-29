@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.toList
 import org.apache.kafka.clients.producer.ProducerRecord
 
 class GithubEventProcessorSpec : StringSpec({
-  val kafka = install(KafkaContainer.resource())
+  val kafka = install { KafkaContainer() }
   val processor = install { EnvGithubEventProcessor(kafka()) }
   val eventProducerSetting = install { kafka().producer(GithubEvent.serializer()) }
   val notificationSettings = install { kafka().consumer(SlackNotification.serializer()) }

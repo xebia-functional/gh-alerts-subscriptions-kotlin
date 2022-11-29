@@ -4,6 +4,7 @@ import alerts.KafkaContainer
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.Env
+import arrow.core.continuations.either
 import alerts.env.SqlDelight
 import alerts.github.GithubError
 import alerts.install
@@ -38,10 +39,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
-  val kafka = install(KafkaContainer.resource())
-  val postgres = install(PostgreSQLContainer.resource())
-  val sqlDelight = install { SqlDelight(postgres().config()).bind() }
-  val producer = install { SubscriptionProducer(kafka()).bind() }
+  val kafka = install { KafkaContainer() }
+  val postgres = install { PostgreSQLContainer() }
+  val sqlDelight = install { SqlDelight(postgres().config()) }
+  val producer = install { SubscriptionProducer(kafka()) }
   
   val subscriptions = install {
     SqlDelightSubscriptionsPersistence(sqlDelight().subscriptionsQueries, sqlDelight().repositoriesQueries)
@@ -59,7 +60,11 @@ class SubscriptionServiceSpec : StringSpec({
     users().insertSlackUser(slackUserId)
     val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> true.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeRight(Unit)
+    /**
+     * We can satisfy `context(MissingRepo, MissingSlackUser)` using `context(EffectScope<Any>)`.
+     * Returning Either<Any, Unit>, and we can assert the result.
+     */
+    either { service.subscribe(slackUserId, subscription) }.shouldBeRight(Unit)
     
     val record = KafkaReceiver(
       kafka().consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
@@ -72,10 +77,10 @@ class SubscriptionServiceSpec : StringSpec({
   
   "If repo exists, and repo has subscribers then no event is send to Kafka" {
     val user = users().insertSlackUser(slackUserId)
-    subscriptions().subscribe(user.userId, subscription)
+    subscriptions().subscribe(user, subscription)
     val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> true.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeRight(Unit)
+    either { service.subscribe(user.slackUserId, subscription) }.shouldBeRight(Unit)
     committedMessages(kafka()) shouldBe 0
   }
   
@@ -83,17 +88,16 @@ class SubscriptionServiceSpec : StringSpec({
     users().insertSlackUser(slackUserId)
     val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> false.right() }
     
-    service.subscribe(slackUserId, subscription).shouldBeLeft(RepoNotFound(subscription.repository))
+    either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(RepoNotFound(subscription.repository))
   }
   
-  "If Github Client returns unexpected StatusCode, it returns RepoNotFound with StatusCode" {
+  "If Github Client returns unexpected StatusCode, it returns GithubError with StatusCode" {
     users().insertSlackUser(slackUserId)
     val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ ->
       GithubError(HttpStatusCode.BadGateway).left()
     }
     
-    service.subscribe(slackUserId, subscription)
-      .shouldBeLeft(RepoNotFound(subscription.repository, HttpStatusCode.BadGateway))
+    either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(GithubError(HttpStatusCode.BadGateway))
   }
 })
 

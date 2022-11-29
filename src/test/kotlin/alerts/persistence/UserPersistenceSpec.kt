@@ -17,9 +17,9 @@ import io.kotest.matchers.shouldBe
 
 class UserPersistenceSpec : StringSpec({
   val slackUserId = SlackUserId("test-user-id")
-  val postgres = install(PostgreSQLContainer.resource())
+  val postgres = install { PostgreSQLContainer() }
   val persistence = install {
-    val sqlDelight = SqlDelight(postgres().config()).bind()
+    val sqlDelight = SqlDelight(postgres().config())
     SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
   }
   

@@ -1,6 +1,7 @@
 package alerts.kafka
 
 import alerts.KafkaContainer
+import io.github.nomisRev.kafka.receiver.KafkaReceiver
 import alerts.install
 import alerts.invoke
 import alerts.subscription.Repository
@@ -8,9 +9,8 @@ import alerts.subscription.SubscriptionEvent
 import alerts.subscription.SubscriptionEventRecord
 import alerts.subscription.SubscriptionKey
 import alerts.subscription.SubscriptionProducer
-import io.github.nomisRev.kafka.receiver.KafkaReceiver
-import io.kotest.assertions.arrow.fx.coroutines.extension
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.assertions.arrow.fx.coroutines.extension
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 
 class SubscriptionProducerSpec : StringSpec({
-  val kafka = install(KafkaContainer.resource())
-  val producer = install { SubscriptionProducer(kafka()).bind() }
+  val kafka = install { KafkaContainer() }
+  val producer = install { SubscriptionProducer(kafka()) }
   val settings = install {
     kafka().consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
   }

@@ -2,7 +2,9 @@ package alerts.subscription
 
 import alerts.HttpStatusCodeSerializer
 import alerts.user.SlackUserId
+import alerts.user.User
 import alerts.user.UserId
+import arrow.core.continuations.EffectScope
 import com.github.avrokotlin.avro4k.AvroNamespace
 import io.ktor.http.HttpStatusCode
 import kotlinx.datetime.LocalDateTime
@@ -33,7 +35,7 @@ data class SubscriptionEventRecord(val event: SubscriptionEvent)
 @Serializable
 enum class SubscriptionEvent { Created, Deleted; }
 
-data class UserNotFound(val userId: UserId)
+data class UserNotFound(val userId: User)
 
 @Serializable
 sealed interface SubscriptionError {
@@ -45,6 +47,8 @@ data class RepoNotFound(
   val repository: Repository,
   @Serializable(HttpStatusCodeSerializer::class) val statusCode: HttpStatusCode? = null,
 ) : SubscriptionError
+
+typealias MissingSlackUser = EffectScope<SlackUserNotFound>
 
 @Serializable
 data class SlackUserNotFound(val slackUserId: SlackUserId, val user: UserId? = null) : SubscriptionError

@@ -14,9 +14,9 @@ import mu.KotlinLogging
 
 class ManageTopicsSpec : StringSpec({
   val logger = KotlinLogging.logger { }
-  val kafka = install(KafkaContainer.resource())
+  val kafka = install { KafkaContainer() }
   val admin = install { autoCloseable { Admin(AdminSettings(kafka().bootstrapServers)) } }
-  val manageTopics = install { manageTopics(kafka(), logger).bind() }
+  val manageTopics = install { EnvManageTopics(kafka(), logger) }
   
   "manageTopics creates topics" {
     val topics = setOf(

@@ -8,6 +8,7 @@ import alerts.slack.slackRoutes
 import alerts.subscription.subscriptionRoutes
 import guru.zoroark.tegral.openapi.ktor.TegralOpenApiKtor
 import guru.zoroark.tegral.openapi.ktorui.TegralSwaggerUiKtor
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation

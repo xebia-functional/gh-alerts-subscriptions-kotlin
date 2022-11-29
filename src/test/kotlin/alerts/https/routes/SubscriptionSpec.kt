@@ -67,12 +67,12 @@ class SubscriptionSpec : StringSpec({
 private val client = GithubClient { _, _ -> true.right() }
 
 private val subscriptions = object : SubscriptionsPersistence {
-  override suspend fun findAll(user: UserId): List<Subscription> = emptyList()
+  override suspend fun findAll(user: User): List<Subscription> = emptyList()
   override suspend fun findSubscribers(repository: Repository): List<UserId> = emptyList()
-  override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
+  override suspend fun subscribe(user: User, subscription: List<Subscription>): Either<UserNotFound, Unit> =
     Unit.right()
   
-  override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) = Unit
+  override suspend fun unsubscribe(user: User, repositories: List<Repository>): Unit = Unit
 }
 
 private val users = object : UserPersistence {

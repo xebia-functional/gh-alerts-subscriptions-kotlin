@@ -7,7 +7,7 @@ import alerts.catch
 import alerts.subscription.SubscriptionEvent
 import alerts.subscription.SubscriptionKey
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.fromAutoCloseable
 import com.github.avrokotlin.avro4k.Avro
 import io.github.nomisRev.kafka.Admin
@@ -28,14 +28,15 @@ interface ManageTopics {
   suspend fun initializeTopics(): Unit
 }
 
-fun manageTopics(
+context(ResourceScope)
+suspend fun EnvManageTopics(
   config: Env.Kafka,
   logger: KLogger,
   registryClientCacheSize: Int = 100,
-): Resource<ManageTopics> = resource {
+): ManageTopics {
   val admin = Resource.fromAutoCloseable { Admin(AdminSettings(config.bootstrapServers)) }.bind()
   val registry = CachedSchemaRegistryClient(config.schemaRegistryUrl, registryClientCacheSize)
-  DefaultManageTopic(config, admin, registry, logger)
+  return DefaultManageTopic(config, admin, registry, logger)
 }
 
 private class DefaultManageTopic(

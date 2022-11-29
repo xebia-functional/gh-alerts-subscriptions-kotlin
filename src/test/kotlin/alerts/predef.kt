@@ -1,9 +1,8 @@
 package alerts
 
-import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.continuations.ResourceDSL
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.continuations.resource
-import arrow.fx.coroutines.fromAutoCloseable
 import io.kotest.assertions.arrow.fx.coroutines.extension
 import io.kotest.core.extensions.LazyMaterialized
 import io.kotest.core.spec.Spec
@@ -13,17 +12,30 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.testing.testApplication
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import org.testcontainers.lifecycle.Startable
 
+@ResourceDSL
 suspend fun <A : AutoCloseable> ResourceScope.autoCloseable(autoCloseable: suspend () -> A): A =
-  Resource.fromAutoCloseable { autoCloseable() }.bind()
+  install({ autoCloseable() }) { closeable, _ ->
+    withContext(Dispatchers.IO) {
+      closeable.close()
+    }
+  }
+
+@ResourceDSL
+suspend fun <A : Startable> ResourceScope.startable(startable: suspend () -> A): A =
+  install({
+    startable().also { runInterruptible(Dispatchers.IO, block = it::start) }
+  }) { closeable, _ ->
+    withContext(Dispatchers.IO) {
+      closeable.close()
+    }
+  }
 
 suspend operator fun <A> LazyMaterialized<A>.invoke(): A = get()
-
-fun <MATERIALIZED> Spec.install(resource: Resource<MATERIALIZED>): LazyMaterialized<MATERIALIZED> {
-  val ext = resource.extension()
-  extensions(ext)
-  return ext.mount { }
-}
 
 fun <MATERIALIZED> Spec.install(
   acquire: suspend ResourceScope.() -> MATERIALIZED,
