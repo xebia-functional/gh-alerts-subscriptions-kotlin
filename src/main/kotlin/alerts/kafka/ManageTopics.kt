@@ -1,7 +1,11 @@
 package alerts.kafka
 
 import alerts.env.Env
-import alerts.persistence.catch
+import alerts.github.GithubEvent
+import alerts.github.SlackNotification
+import alerts.catch
+import alerts.subscription.SubscriptionEvent
+import alerts.subscription.SubscriptionKey
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.fx.coroutines.fromAutoCloseable
@@ -25,7 +29,7 @@ interface ManageTopics {
 }
 
 context(ResourceScope)
-suspend fun manageTopics(
+suspend fun EnvManageTopics(
   config: Env.Kafka,
   logger: KLogger,
   registryClientCacheSize: Int = 100,

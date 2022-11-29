@@ -1,13 +1,13 @@
-package alerts.service
+package alerts.notification
 
 import alerts.coroutineScope
-import alerts.kafka.GithubEvent
-import alerts.kafka.GithubEventProcessor
-import alerts.kafka.SlackNotification
-import alerts.persistence.Repository
-import alerts.persistence.SubscriptionsPersistence
-import alerts.persistence.UserPersistence
-import alerts.persistence.catch
+import alerts.github.GithubEvent
+import alerts.github.GithubEventProcessor
+import alerts.github.SlackNotification
+import alerts.subscription.Repository
+import alerts.subscription.SubscriptionsPersistence
+import alerts.user.UserPersistence
+import alerts.catch
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
 import arrow.core.continuations.ensureNotNull
@@ -32,7 +32,7 @@ import mu.KotlinLogging
 
 fun interface NotificationService {
   context(ResourceScope)
-    suspend fun process(): Job
+  suspend fun process(): Job
 }
 
 fun NotificationService(

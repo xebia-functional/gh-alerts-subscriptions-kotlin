@@ -19,8 +19,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.experimental.ExperimentalTypeInference
 
 context(EffectScope<E2>)
-  @OptIn(ExperimentalTypeInference::class)
-  suspend infix fun <E, E2, A> Effect<E, A>.catch(@BuilderInference resolve: suspend EffectScope<E2>.(E) -> A): A =
+@OptIn(ExperimentalTypeInference::class)
+suspend infix fun <E, E2, A> Effect<E, A>.catch(@BuilderInference resolve: suspend EffectScope<E2>.(E) -> A): A =
   effect { fold({ resolve(it) }, { it }) }.bind()
 
 @OptIn(ExperimentalTypeInference::class)
@@ -45,7 +45,7 @@ public inline infix fun <reified T : Throwable, E, A> Effect<E, A>.attempt(
  * It calls the correct [cancel] overload depending on the [ExitCase].
  */
 context(ResourceScope)
-  suspend fun coroutineScope(context: CoroutineContext): CoroutineScope =
+suspend fun coroutineScope(context: CoroutineContext): CoroutineScope =
   Resource({ CoroutineScope(context) }, { scope, exitCase ->
     when (exitCase) {
       ExitCase.Completed -> scope.cancel()

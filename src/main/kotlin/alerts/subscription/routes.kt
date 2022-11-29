@@ -1,16 +1,12 @@
-package alerts.https.routes
+package alerts.subscription
 
 import alerts.KtorCtx
 import alerts.Time
 import alerts.attempt
 import alerts.badRequest
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
+import alerts.env.Routes
+import alerts.user.SlackUserId
 import alerts.respond
-import alerts.service.RepoNotFound
-import alerts.service.SlackUserNotFound
-import alerts.service.SubscriptionService
 import alerts.slackUserId
 import arrow.core.continuations.EffectScope
 import arrow.core.continuations.effect
@@ -34,10 +30,6 @@ import io.ktor.server.routing.Routing
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class Subscriptions(val subscriptions: List<Subscription>)
 
 fun Routing.subscriptionRoutes(
   service: SubscriptionService,
@@ -100,7 +92,7 @@ private val subscriptionsExample =
   Subscriptions(listOf(Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))))
 
 context(EffectScope<OutgoingContent>)
-  private suspend fun KtorCtx.receiveRepository(): Repository =
+private suspend fun KtorCtx.receiveRepository(): Repository =
   effect<OutgoingContent, Repository> { call.receive() }
     .attempt { _: ContentTransformationException -> shift(badRequest(INCORRECT_REPO_MESSAGE)) }
     .bind()
@@ -119,13 +111,13 @@ private fun OperationDsl.repoNotFoundReturn(): Unit =
     json { schema(RepoNotFound(Repository("non-existing-owner", "repo"))) }
   }
 
+private fun OperationDsl.slackUserNotFoundReturn(): Unit =
+  NotFound.value response {
+    json { schema(SlackUserNotFound(SlackUserId("slack-user-id"))) }
+  }
+
 private fun OperationDsl.repository(): Unit =
   body { json { schema(Repository("arrow-kt", "arrow")) } }
 
 private fun OperationDsl.slackUserIdQuery(): Unit =
   "slackUserId" queryParameter { schema("slackUserId") }
-
-private fun OperationDsl.slackUserNotFoundReturn(): Unit =
-  NotFound.value response {
-    json { schema(SlackUserNotFound(SlackUserId("slack-user-id"))) }
-  }

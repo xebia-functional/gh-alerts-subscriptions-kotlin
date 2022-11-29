@@ -1,5 +1,5 @@
-import alerts.persistence.UserId;
-import alerts.persistence.SlackUserId;
+import alerts.user.UserId;
+import alerts.user.SlackUserId;
 
 CREATE TABLE IF NOT EXISTS users(
   user_id BIGSERIAL AS UserId PRIMARY KEY,

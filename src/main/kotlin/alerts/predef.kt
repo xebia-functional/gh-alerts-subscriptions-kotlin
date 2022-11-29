@@ -1,5 +1,9 @@
 package alerts
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.nonFatalOrThrow
+import arrow.core.right
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -9,6 +13,24 @@ import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
+
+/**
+ * Catches a [Throwable], and allows mapping to [E].
+ * In the case `null` is returned the original [Throwable] is rethrown,
+ * otherwise `Either<E, A>` is returned.
+ */
+@Suppress("TooGenericExceptionCaught")
+inline fun <reified T : Throwable, E, A> catch(
+  block: () -> A,
+  transform: (T) -> E,
+): Either<E, A> = try {
+  block().right()
+} catch (e: Throwable) {
+  val nonFatal = e.nonFatalOrThrow()
+  if (nonFatal is T) {
+    transform(nonFatal).left()
+  } else throw e
+}
 
 object HttpStatusCodeSerializer : KSerializer<HttpStatusCode> {
   override val descriptor: SerialDescriptor = buildClassSerialDescriptor("HttpStatusCode") {

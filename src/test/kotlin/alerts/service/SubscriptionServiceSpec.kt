@@ -4,19 +4,22 @@ import alerts.KafkaContainer
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.Env
-import alerts.env.sqlDelight
-import alerts.https.client.GithubError
-import alerts.kafka.SubscriptionEvent
-import alerts.kafka.SubscriptionEventRecord
-import alerts.kafka.SubscriptionKey
-import alerts.kafka.SubscriptionProducer
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
-import alerts.persistence.SubscriptionsPersistence
-import alerts.persistence.userPersistence
-import alerts.resource
 import arrow.core.continuations.either
+import alerts.env.SqlDelight
+import alerts.github.GithubError
+import alerts.install
+import alerts.invoke
+import alerts.subscription.SubscriptionEvent
+import alerts.subscription.SubscriptionEventRecord
+import alerts.subscription.SubscriptionKey
+import alerts.subscription.SubscriptionProducer
+import alerts.subscription.Repository
+import alerts.user.SlackUserId
+import alerts.subscription.Subscription
+import alerts.subscription.RepoNotFound
+import alerts.subscription.SqlDelightSubscriptionsPersistence
+import alerts.subscription.SubscriptionService
+import alerts.user.SqlDelightUserPersistence
 import arrow.core.left
 import arrow.core.right
 import io.github.nomisRev.kafka.Admin
@@ -36,24 +39,26 @@ import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
-  val kafka by resource { KafkaContainer() }
-  val postgres by resource { PostgreSQLContainer() }
-  val sqlDelight by resource { sqlDelight(postgres.config()) }
-  val producer by resource { SubscriptionProducer(kafka) }
+  val kafka = install { KafkaContainer() }
+  val postgres = install(PostgreSQLContainer.resource())
+  val sqlDelight = install { SqlDelight(postgres().config()) }
+  val producer = install { SubscriptionProducer(kafka()) }
   
-  val subscriptions by lazy {
-    SubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
+  val subscriptions = install {
+    SqlDelightSubscriptionsPersistence(sqlDelight().subscriptionsQueries, sqlDelight().repositoriesQueries)
   }
-  val users by lazy { userPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter) }
+  val users = install {
+    SqlDelightUserPersistence(sqlDelight().usersQueries, TestMetrics.slackUsersCounter)
+  }
   
-  afterTest { postgres.clear() }
+  afterTest { postgres().clear() }
   
   val slackUserId = SlackUserId("test-user-id")
   val subscription = Subscription(Repository("arrow-kt", "arrow"), Clock.System.now().toLocalDateTime(TimeZone.UTC))
   
   "If repo exists, and repo has no subscribers then event is send to Kafka" {
-    users.insertSlackUser(slackUserId)
-    val service = SubscriptionService(subscriptions, users, producer) { _, _ -> true.right() }
+    users().insertSlackUser(slackUserId)
+    val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> true.right() }
     
     /**
      * We can satisfy `context(MissingRepo, MissingSlackUser)` using `context(EffectScope<Any>)`.
@@ -62,8 +67,8 @@ class SubscriptionServiceSpec : StringSpec({
     either { service.subscribe(slackUserId, subscription) }.shouldBeRight(Unit)
     
     val record = KafkaReceiver(
-      kafka.consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
-    ).receiveAutoAck(kafka.subscriptionTopic.name)
+      kafka().consumer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
+    ).receiveAutoAck(kafka().subscriptionTopic.name)
       .firstOrNull()?.firstOrNull().shouldNotBeNull() // First message of first batch
     
     record.key() shouldBe SubscriptionKey(subscription.repository)
@@ -71,25 +76,26 @@ class SubscriptionServiceSpec : StringSpec({
   }
   
   "If repo exists, and repo has subscribers then no event is send to Kafka" {
-    val user = users.insertSlackUser(slackUserId)
-    subscriptions.subscribe(user, subscription)
-    val service = SubscriptionService(subscriptions, users, producer) { _, _ -> true.right() }
+    val user = users().insertSlackUser(slackUserId)
+    subscriptions().subscribe(user, subscription)
+    val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> true.right() }
     
     either { service.subscribe(user.slackUserId, subscription) }.shouldBeRight(Unit)
-    committedMessages(kafka) shouldBe 0
+    committedMessages(kafka()) shouldBe 0
   }
   
   "If repo doesn't exist, it returns RepoNotFound" {
-    users.insertSlackUser(slackUserId)
-    val service = SubscriptionService(subscriptions, users, producer) { _, _ -> false.right() }
+    users().insertSlackUser(slackUserId)
+    val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ -> false.right() }
     
     either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(RepoNotFound(subscription.repository))
   }
   
   "If Github Client returns unexpected StatusCode, it returns GithubError with StatusCode" {
-    users.insertSlackUser(slackUserId)
-    val service =
-      SubscriptionService(subscriptions, users, producer) { _, _ -> GithubError(HttpStatusCode.BadGateway).left() }
+    users().insertSlackUser(slackUserId)
+    val service = SubscriptionService(subscriptions(), users(), producer()) { _, _ ->
+      GithubError(HttpStatusCode.BadGateway).left()
+    }
     
     either { service.subscribe(slackUserId, subscription) }.shouldBeLeft(GithubError(HttpStatusCode.BadGateway))
   }

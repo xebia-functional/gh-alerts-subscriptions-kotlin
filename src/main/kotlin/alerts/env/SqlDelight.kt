@@ -1,8 +1,8 @@
 package alerts.env
 
-import alerts.persistence.RepositoryId
-import alerts.persistence.SlackUserId
-import alerts.persistence.UserId
+import alerts.subscription.RepositoryId
+import alerts.user.SlackUserId
+import alerts.user.UserId
 import alerts.sqldelight.Repositories
 import alerts.sqldelight.SqlDelight
 import alerts.sqldelight.Subscriptions
@@ -17,7 +17,7 @@ import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
 
 context(ResourceScope)
-suspend fun sqlDelight(env: Env.Postgres): SqlDelight {
+suspend fun SqlDelight(env: Env.Postgres): SqlDelight {
   val dataSource = hikari(env)
   val driver = Resource.fromCloseable(dataSource::asJdbcDriver).bind()
   Flyway.configure().dataSource(dataSource).load().migrate()

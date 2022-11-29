@@ -46,8 +46,3 @@ When you're done, stop the services.
 ```shell
 docker-compose down --remove-orphans
 ```
-
-### 📖 Design decisions
-
-- [Env / Configuration](EnviromentConfiguration.MD)
-- [Dependency Injection](DependencyInjection.MD)

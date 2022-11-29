@@ -1,29 +1,14 @@
-package alerts.service
+package alerts.subscription
 
-import alerts.https.client.GithubErrors
-import alerts.https.client.GithubClient
-import alerts.kafka.SubscriptionProducer
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
-import alerts.persistence.SubscriptionsPersistence
-import alerts.persistence.UserPersistence
 import arrow.core.continuations.EffectScope
+import alerts.github.GithubClient
+import alerts.github.GithubErrors
+import alerts.user.SlackUserId
+import alerts.user.UserPersistence
 import arrow.core.continuations.ensureNotNull
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import mu.KotlinLogging
 
 typealias MissingRepo = EffectScope<RepoNotFound>
-@Serializable
-data class RepoNotFound(val repository: Repository){
-  fun asJson(): String = Json.encodeToString(serializer(), this)
-}
-
-typealias MissingSlackUser = EffectScope<SlackUserNotFound>
-@Serializable
-data class SlackUserNotFound(val slackUserId: SlackUserId) {
-  fun asJson(): String = Json.encodeToString(serializer(), this)
-}
 
 interface SubscriptionService {
   /** Returns all subscriptions for the given [slackUserId], empty if none found */
@@ -50,14 +35,16 @@ fun SubscriptionService(
   users: UserPersistence,
   producer: SubscriptionProducer,
   client: GithubClient,
-): SubscriptionService = Subscriptions(subscriptions, users, producer, client)
+): SubscriptionService = SqlDelightSubscriptionService(subscriptions, users, producer, client)
 
-private class Subscriptions(
+private class SqlDelightSubscriptionService(
   private val subscriptions: SubscriptionsPersistence,
   private val users: UserPersistence,
   private val producer: SubscriptionProducer,
   private val client: GithubClient,
 ) : SubscriptionService {
+  private val logger = KotlinLogging.logger { }
+  
   context(MissingSlackUser)
   override suspend fun findAll(slackUserId: SlackUserId): List<Subscription> {
     val user = users.findSlackUser(slackUserId)
@@ -72,6 +59,7 @@ private class Subscriptions(
     ensure(exists) { RepoNotFound(subscription.repository) }
     val hasSubscribers = subscriptions.findSubscribers(subscription.repository).isNotEmpty()
     subscriptions.subscribe(user, subscription)
+    logger.info { "hasSubscribers: $hasSubscribers => " }
     return if (!hasSubscribers) producer.publish(subscription.repository) else Unit
   }
   

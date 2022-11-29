@@ -1,9 +1,7 @@
-package alerts.https.client
+package alerts.github
 
-import alerts.HttpStatusCodeSerializer
 import alerts.env.Env
 import arrow.core.Either
-import arrow.core.continuations.EffectScope
 import arrow.core.continuations.either
 import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.Schedule
@@ -18,18 +16,10 @@ import io.ktor.client.plugins.resources.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource as KtorRes
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import mu.KLogger
 import mu.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-
-typealias GithubErrors = EffectScope<GithubError>
-
-@JvmInline
-value class GithubError(val statusCode: HttpStatusCode) {
-  fun asJson(): String = Json.encodeToString(HttpStatusCodeSerializer, statusCode)
-}
 
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>

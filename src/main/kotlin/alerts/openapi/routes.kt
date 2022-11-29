@@ -1,5 +1,6 @@
-package alerts.https.routes
+package alerts.openapi
 
+import alerts.env.Routes
 import guru.zoroark.tegral.openapi.ktor.openApiEndpoint
 import guru.zoroark.tegral.openapi.ktorui.swaggerUiEndpoint
 import io.ktor.server.application.call

@@ -1,6 +1,6 @@
-package alerts.https.routes
+package alerts.env
 
-import alerts.persistence.SlackUserId
+import alerts.user.SlackUserId
 import io.ktor.resources.Resource
 import kotlinx.serialization.Serializable
 

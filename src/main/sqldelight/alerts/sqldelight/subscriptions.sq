@@ -1,5 +1,5 @@
-import alerts.persistence.UserId;
-import alerts.persistence.RepositoryId;
+import alerts.user.UserId;
+import alerts.subscription.RepositoryId;
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id BIGSERIAL AS UserId NOT NULL,

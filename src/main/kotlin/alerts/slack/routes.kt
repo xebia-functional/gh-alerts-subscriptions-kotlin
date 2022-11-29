@@ -1,13 +1,14 @@
-package alerts.https.routes
+package alerts.slack
 
 import alerts.StatusCodeError
 import alerts.Time
 import alerts.badRequest
-import alerts.persistence.Repository
-import alerts.persistence.SlackUserId
-import alerts.persistence.Subscription
+import alerts.env.Routes
+import alerts.subscription.Repository
+import alerts.user.SlackUserId
+import alerts.subscription.Subscription
 import alerts.respond
-import alerts.service.SubscriptionService
+import alerts.subscription.SubscriptionService
 import alerts.statusCode
 import arrow.core.continuations.ensureNotNull
 import io.ktor.http.HttpStatusCode.Companion.Created
@@ -18,17 +19,6 @@ import io.ktor.server.request.receiveParameters
 import io.ktor.server.resources.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.Routing
-import kotlinx.serialization.Serializable
-
-@Serializable
-enum class Command { Subscribe }
-
-@Serializable
-data class SlashCommand(
-  val userId: SlackUserId,
-  val command: Command,
-  val repo: Repository,
-)
 
 fun Routing.slackRoutes(service: SubscriptionService, time: Time = Time.UTC): Route =
   get<Routes.Slack> {
