@@ -64,7 +64,6 @@ private suspend fun zooKeeper(network: Network): GenericContainer<*> = startable
 
 context(ResourceScope)
 private suspend fun kafka(network: Network): KafkaContainer = startable {
-  withContext(Dispatchers.IO) {
     val kafkaImage: DockerImageName =
       if (getProperty("os.arch") == "aarch64") DockerImageName.parse("niciqy/cp-kafka-arm64:7.0.1")
         .asCompatibleSubstituteFor("confluentinc/cp-kafka")
@@ -78,5 +77,4 @@ private suspend fun kafka(network: Network): KafkaContainer = startable {
       .withEnv("KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR", "1")
       .withEnv("KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR", "1")
       .withExternalZookeeper("zookeeper:2181")
-  }
 }
