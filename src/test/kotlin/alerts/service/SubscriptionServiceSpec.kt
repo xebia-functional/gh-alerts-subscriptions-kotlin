@@ -1,6 +1,6 @@
 package alerts.service
 
-import alerts.KafkaContainer
+import alerts.Kafka
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.Env
@@ -38,10 +38,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.apache.kafka.common.TopicPartition
 
 class SubscriptionServiceSpec : StringSpec({
-  val kafka = install(KafkaContainer.resource())
+  val kafka = install { Kafka() }
   val postgres = install(PostgreSQLContainer.resource())
-  val sqlDelight = install { SqlDelight(postgres().config()).bind() }
-  val producer = install { SubscriptionProducer(kafka()).bind() }
+  val sqlDelight = install { SqlDelight(postgres().config()) }
+  val producer = install { SubscriptionProducer(kafka()) }
   
   val subscriptions = install {
     SqlDelightSubscriptionsPersistence(sqlDelight().subscriptionsQueries, sqlDelight().repositoriesQueries)

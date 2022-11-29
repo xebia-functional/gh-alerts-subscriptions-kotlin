@@ -27,9 +27,7 @@ import kotlinx.datetime.toLocalDateTime
 class SubscriptionsPersistenceSpec : StringSpec({
   
   val postgres = install(PostgreSQLContainer.resource())
-  val sqlDelight = install {
-    SqlDelight(postgres.get().config()).bind()
-  }
+  val sqlDelight = install { SqlDelight(postgres.get().config()) }
   val persistence = install {
     SqlDelightSubscriptionsPersistence(sqlDelight().subscriptionsQueries, sqlDelight().repositoriesQueries)
   }

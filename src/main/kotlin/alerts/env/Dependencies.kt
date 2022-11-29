@@ -9,8 +9,7 @@ import alerts.notification.NotificationService
 import alerts.user.SqlDelightUserPersistence
 import alerts.subscription.SqlDelightSubscriptionsPersistence
 import alerts.subscription.SubscriptionService
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.ResourceScope
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import io.prometheus.client.Counter
 
@@ -20,21 +19,21 @@ class Dependencies(
   val metrics: PrometheusMeterRegistry,
 )
 
-fun Dependencies(env: Env): Resource<Dependencies> = resource {
-  val appMicrometerRegistry = metricsRegistry.bind()
+suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
+  val appMicrometerRegistry = metricsRegistry()
   val slackUsersCounter: Counter = slackUsersCounter(appMicrometerRegistry)
   
-  val sqlDelight = SqlDelight(env.postgres).bind()
+  val sqlDelight = SqlDelight(env.postgres)
   val users = SqlDelightUserPersistence(sqlDelight.usersQueries, slackUsersCounter)
   val subscriptionsPersistence =
     SqlDelightSubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
   
   val githubEventProcessor = EnvGithubEventProcessor(env.kafka)
-  val producer = SubscriptionProducer(env.kafka).bind()
+  val producer = SubscriptionProducer(env.kafka)
   
-  val client = GithubClient(env.github).bind()
+  val client = GithubClient(env.github)
   
-  Dependencies(
+  return Dependencies(
     NotificationService(users, subscriptionsPersistence, githubEventProcessor),
     SubscriptionService(subscriptionsPersistence, users, producer, client),
     appMicrometerRegistry

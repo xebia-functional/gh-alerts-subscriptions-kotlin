@@ -19,7 +19,7 @@ class UserPersistenceSpec : StringSpec({
   val slackUserId = SlackUserId("test-user-id")
   val postgres = install(PostgreSQLContainer.resource())
   val persistence = install {
-    val sqlDelight = SqlDelight(postgres().config()).bind()
+    val sqlDelight = SqlDelight(postgres().config())
     SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
   }
   

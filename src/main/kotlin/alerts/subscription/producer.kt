@@ -1,9 +1,8 @@
 package alerts.subscription
 
 import alerts.env.Env
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
-import arrow.fx.coroutines.fromAutoCloseable
+import arrow.fx.coroutines.ResourceScope
+import arrow.fx.coroutines.autoCloseable
 import io.github.nomisRev.kafka.KafkaProducer
 import io.github.nomisRev.kafka.sendAwait
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -14,12 +13,11 @@ interface SubscriptionProducer {
   suspend fun delete(repo: Repository): Unit
 }
 
-fun SubscriptionProducer(kafka: Env.Kafka): Resource<SubscriptionProducer> =
-  resource {
-    val settings = kafka.producer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
-    val producer = Resource.fromAutoCloseable { KafkaProducer(settings) }.bind()
-    DefaultSubscriptionProducer(producer, kafka.subscriptionTopic)
-  }
+suspend fun ResourceScope.SubscriptionProducer(kafka: Env.Kafka): SubscriptionProducer {
+  val settings = kafka.producer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
+  val producer = autoCloseable { KafkaProducer(settings) }
+  return DefaultSubscriptionProducer(producer, kafka.subscriptionTopic)
+}
 
 private class DefaultSubscriptionProducer(
   private val producer: KafkaProducer<SubscriptionKey, SubscriptionEventRecord>,

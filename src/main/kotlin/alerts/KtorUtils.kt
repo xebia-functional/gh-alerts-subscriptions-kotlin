@@ -3,6 +3,7 @@ package alerts
 import arrow.core.Either
 import arrow.fx.coroutines.ExitCase
 import arrow.fx.coroutines.Resource
+import arrow.fx.coroutines.ResourceScope
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
@@ -42,14 +43,16 @@ import kotlin.coroutines.CoroutineContext
  * @param timeout a duration after which the server will be forceably shutdown.
  *
  * ```kotlin
- * fun main(): Unit = cancelOnShutdown {
- *   resource {
- *     val engine = server(Netty, port = 8080).bind()
- *     val dependencies = Resource({ }, { _, exitCase -> println("Closing resources") }
- *     engine.application.routing {
- *       get("ping") { call.respond("pong") }
+ * fun main(): Unit = SuspendApp {
+ *   resourceScope {
+ *     val dependencies = install({ }, { _, exitCase -> println("Closing resources") }
+ *     server(Netty, port = 8080) {
+ *       routing {
+ *         get("ping") { call.respond("pong") }
+ *       }
  *     }
- *   }.use { awaitCancellation() }
+ *     awaitCancellation()
+ *   }
  * }
  *
  * // Server Start
@@ -62,7 +65,7 @@ import kotlin.coroutines.CoroutineContext
  * ```
  */
 @Suppress("LongParameterList")
-fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> server(
+suspend fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configuration> ResourceScope.server(
   factory: ApplicationEngineFactory<TEngine, TConfiguration>,
   port: Int = 80,
   host: String = "0.0.0.0",
@@ -71,14 +74,14 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
   grace: Duration = 1.seconds,
   timeout: Duration = 5.seconds,
   module: suspend Application.() -> Unit = {},
-): Resource<ApplicationEngine> =
-  Resource({
+): ApplicationEngine =
+  install({
     embeddedServer(factory, host = host, port = port, configure = configure) {
     }.apply {
       module(application)
       start()
     }
-  }, { engine, _ ->
+  }) { engine, _ ->
     if (!engine.environment.developmentMode) {
       engine.environment.log.info(
         "prewait delay of ${preWait.inWholeMilliseconds}ms, turn it off using io.ktor.development=true"
@@ -88,14 +91,14 @@ fun <TEngine : ApplicationEngine, TConfiguration : ApplicationEngine.Configurati
     engine.environment.log.info("Shutting down HTTP server...")
     engine.stop(grace.inWholeMilliseconds, timeout.inWholeMilliseconds)
     engine.environment.log.info("HTTP server shutdown!")
-  })
+  }
 
 /**
  * Utility to create a [CoroutineScope] as a [Resource].
  * It calls the correct [cancel] overload depending on the [ExitCase].
  */
-fun Resource.Companion.coroutineScope(context: CoroutineContext): Resource<CoroutineScope> =
-  Resource({ CoroutineScope(context) }, { scope, exitCase ->
+suspend fun ResourceScope.coroutineScope(context: CoroutineContext): CoroutineScope =
+  install({ CoroutineScope(context) }, { scope, exitCase ->
     when (exitCase) {
       ExitCase.Completed -> scope.cancel()
       is ExitCase.Cancelled -> scope.cancel(exitCase.exception)

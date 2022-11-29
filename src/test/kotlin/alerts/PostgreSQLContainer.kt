@@ -25,15 +25,7 @@ class PostgreSQLContainer private constructor() :
   
   companion object {
     fun resource(): Resource<PostgreSQLContainer> = resource {
-      withContext(Dispatchers.IO) {
-        PostgreSQLContainer()
-          .waitingFor(Wait.forListeningPort())
-          .also { container -> runInterruptible(block = container::start) }
-      }
-    } release { postgres ->
-      withContext(Dispatchers.IO) {
-        postgres.close()
-      }
+      startable { PostgreSQLContainer().waitingFor(Wait.forListeningPort()) }
     }
   }
 }

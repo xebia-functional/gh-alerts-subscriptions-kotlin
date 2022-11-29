@@ -55,7 +55,7 @@ private class Notifications(
   private val logger = KotlinLogging.logger { }
   
   override fun process(): Resource<Job> = resource {
-    val scope = Resource.coroutineScope(Dispatchers.IO).bind()
+    val scope = coroutineScope(Dispatchers.IO)
     processor.process { event ->
       findSubscribers(event).fold({ error ->
         error.log()
