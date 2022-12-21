@@ -1,8 +1,28 @@
 package alerts.user
 
-import alerts.sqldelight.UsersQueries
 import arrow.core.NonEmptyList
 import io.prometheus.client.Counter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import org.springframework.data.annotation.Id
+import org.springframework.data.r2dbc.repository.Query
+import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.repository.kotlin.CoroutineCrudRepository
+import org.springframework.stereotype.Component
+
+data class UserDto(
+  @Id
+  @Column("userId")
+  val userId: Long,
+  val slackUserId: String
+)
+
+interface UserRepo : CoroutineCrudRepository<UserDto, Long> {
+  suspend fun findBySlackUserId(slackUserId: String): UserDto?
+
+  @Query("INSERT INTO users(slack_user_id) VALUES (:slackUserId) RETURNING user_id")
+  suspend fun insertSlackUserId(slackUserId: String): UserDto
+}
 
 interface UserPersistence {
   suspend fun find(userId: UserId): User?
@@ -11,21 +31,23 @@ interface UserPersistence {
   suspend fun insertSlackUser(slackUserId: SlackUserId): User
 }
 
-class SqlDelightUserPersistence(private val queries: UsersQueries, private val slackUsersCounter: Counter) :
-  UserPersistence {
+@Component
+class DefaultUserPersistence(private val queries: UserRepo, private val slackUsersCounter: Counter) : UserPersistence {
   override suspend fun find(userId: UserId): User? =
-    queries.find(userId, ::User).executeAsOneOrNull()
-  
+    queries.findById(userId.serial)
+      ?.let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+
   override suspend fun findSlackUser(slackUserId: SlackUserId): User? =
-    queries.findSlackUser(slackUserId, ::User).executeAsOneOrNull()
-  
+    queries.findBySlackUserId(slackUserId.slackUserId)
+      ?.let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+
   override suspend fun findUsers(userIds: NonEmptyList<UserId>): List<User> =
-    queries.findUsers(userIds, ::User).executeAsList()
-  
+    queries.findAllById(userIds.map { it.serial })
+      .map { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+      .toList()
+
   override suspend fun insertSlackUser(slackUserId: SlackUserId): User =
-    queries.transactionWithResult {
-      queries.findSlackUser(slackUserId, ::User).executeAsOneOrNull()
-        ?: User(queries.insert(slackUserId).executeAsOne(), slackUserId)
-          .also { slackUsersCounter.inc() }
-    }
+    queries.insertSlackUserId(slackUserId.slackUserId)
+      .let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+      .also { slackUsersCounter.inc() }
 }

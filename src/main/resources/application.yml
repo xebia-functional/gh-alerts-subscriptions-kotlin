@@ -1,0 +1,51 @@
+server:
+  port: ${PORT:8080}
+  address: ${host:0.0.0.0}
+  servlet:
+      context-path: /
+
+github:
+  url: ${GITHUB_URL:https://api.github.com}
+  token: ${GITHUB_TOKEN}
+
+kafka:
+  bootstrapServers: ${BOOTSTRAP_SERVERS:localhost:9092}
+  schemaRegistryUrl: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+
+  subscription:
+    name: ${SUBSCRIPTION_TOPIC:subscriptions}
+    numPartitions: 1
+    replicationFactor: 1
+
+  event:
+    name: ${EVENT_TOPIC:events}
+    numPartitions: 1
+    replicationFactor: 1
+
+  notification:
+    name: ${NOTIFICATION_TOPIC:notifications}
+    numPartitions: 1
+    replicationFactor: 1
+
+spring:
+  application:
+    name: gh-alerts-subscriptions-kotlin
+  config:
+    import: optional:file:.env[.properties]
+  r2dbc:
+    url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5433/alerts}
+    username: ${POSTGRES_USER:test}
+    password: ${POSTGRES_USER:test}
+
+flyway:
+  url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5433/alerts}
+  schemas: SUBSCRIPTIONSSERVICE
+  user: ${POSTGRES_USER:test}
+  password: ${POSTGRES_USER:test}
+
+springdoc:
+    enable-native-support: true
+    show-actuator: true
+    swagger-ui:
+        use-root-path: true
+

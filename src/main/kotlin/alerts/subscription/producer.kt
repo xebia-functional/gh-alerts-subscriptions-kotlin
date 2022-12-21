@@ -1,47 +1,40 @@
 package alerts.subscription
 
-import alerts.env.Env
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
-import arrow.fx.coroutines.fromAutoCloseable
-import io.github.nomisRev.kafka.KafkaProducer
-import io.github.nomisRev.kafka.sendAwait
-import org.apache.kafka.clients.producer.KafkaProducer
+import alerts.env.Kafka
+import alerts.env.SubscriptionTopic
+import kotlinx.coroutines.reactive.awaitSingle
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
+import org.springframework.stereotype.Component
 
 interface SubscriptionProducer {
-  suspend fun publish(repo: Repository): Unit
-  suspend fun delete(repo: Repository): Unit
+  suspend fun publish(repo: Repository)
+  suspend fun delete(repo: Repository)
 }
 
-fun SubscriptionProducer(kafka: Env.Kafka): Resource<SubscriptionProducer> =
-  resource {
-    val settings = kafka.producer(SubscriptionKey.serializer(), SubscriptionEventRecord.serializer())
-    val producer = Resource.fromAutoCloseable { KafkaProducer(settings) }.bind()
-    DefaultSubscriptionProducer(producer, kafka.subscriptionTopic)
-  }
-
-private class DefaultSubscriptionProducer(
-  private val producer: KafkaProducer<SubscriptionKey, SubscriptionEventRecord>,
-  private val topic: Env.Kafka.Topic,
+@Component
+class DefaultSubscriptionProducer(
+  private val producer: ReactiveKafkaProducerTemplate<SubscriptionKey, SubscriptionEventRecord>,
+  private val kafka: Kafka,
+  private val topic: SubscriptionTopic,
 ) : SubscriptionProducer {
-  override suspend fun publish(repo: Repository): Unit {
-    producer.sendAwait(
+  override suspend fun publish(repo: Repository) {
+    producer.send(
       ProducerRecord(
         topic.name,
         SubscriptionKey(repo),
         SubscriptionEventRecord(SubscriptionEvent.Created)
       )
-    )
+    ).awaitSingle()
   }
-  
+
   override suspend fun delete(repo: Repository) {
-    producer.sendAwait(
+    producer.send(
       ProducerRecord(
         topic.name,
         SubscriptionKey(repo),
         SubscriptionEventRecord(SubscriptionEvent.Deleted)
       )
-    )
+    ).awaitSingle()
   }
 }

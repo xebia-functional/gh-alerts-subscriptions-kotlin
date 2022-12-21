@@ -1,10 +1,12 @@
 package alerts.health
 
-import alerts.env.Routes
-import io.ktor.server.application.call
-import io.ktor.server.resources.get
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
+import org.springframework.http.ResponseEntity
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
 
-fun Routing.healthRoute() =
-  get<Routes.Health> { call.respond("pong") }
+@Controller
+class HealthController {
+  @GetMapping("/ping")
+  fun ping(): ResponseEntity<String> =
+    ResponseEntity.ok("pong")
+}

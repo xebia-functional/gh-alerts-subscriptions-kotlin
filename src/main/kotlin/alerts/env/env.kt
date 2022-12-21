@@ -1,86 +1,56 @@
 package alerts.env
 
-import alerts.kafka.AvroSerializer
-import io.github.nomisRev.kafka.ProducerSettings
-import io.github.nomisRev.kafka.receiver.ReceiverSettings
-import kotlinx.serialization.KSerializer
-import org.apache.kafka.common.serialization.VoidSerializer
-import java.lang.System.getenv
+import java.util.Properties
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.bind.ConstructorBinding
 
-private const val PORT: Int = 8080
-private const val JDBC_URL: String = "jdbc:postgresql://localhost:5432/alerts"
-private const val JDBC_USER: String = "test"
-private const val JDBC_PW: String = "test"
+@ConfigurationProperties("github")
+data class Github @ConstructorBinding constructor(val url: String, val token: String?)
 
-data class Env(
-  val http: Http = Http(),
-  val postgres: Postgres = Postgres(),
-  val github: Github = Github(),
-  val kafka: Kafka = Kafka(),
+interface Topic {
+  val name: String
+  val numPartitions: Int
+  val replicationFactor: Short
+}
+
+@ConfigurationProperties("kafka.subscription")
+data class SubscriptionTopic @ConstructorBinding constructor(
+  override val name: String,
+  override val numPartitions: Int,
+  override val replicationFactor: Short,
+): Topic
+
+@ConfigurationProperties("kafka.event")
+data class EventTopic @ConstructorBinding constructor(
+  override val name: String,
+  override val numPartitions: Int,
+  override val replicationFactor: Short,
+): Topic
+
+@ConfigurationProperties("kafka.notification")
+data class NotificationTopic @ConstructorBinding constructor(
+  override val name: String,
+  override val numPartitions: Int,
+  override val replicationFactor: Short,
+): Topic
+
+@ConfigurationProperties("kafka")
+data class Kafka @ConstructorBinding constructor(
+  val bootstrapServers: String,
+  val schemaRegistryUrl: String,
+  val subscription: SubscriptionTopic,
+  val event: EventTopic,
+  val notification: NotificationTopic,
 ) {
-  
-  data class Http(
-    val host: String = getenv("host") ?: "0.0.0.0",
-    val port: Int = getenv("PORT")?.toIntOrNull() ?: PORT,
-  )
-  
-  data class Postgres(
-    val url: String = getenv("POSTGRES_URL") ?: JDBC_URL,
-    val username: String = getenv("POSTGRES_USER") ?: JDBC_USER,
-    val password: String = getenv("POSTGRES_PASSWORD") ?: JDBC_PW,
-  ) {
-    val driver: String = "org.postgresql.Driver"
+  private val eventConsumerGroupId = "github-event-consumer"
+
+  fun consumerProperties() = Properties().apply {
+    put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+    put(ConsumerConfig.GROUP_ID_CONFIG, eventConsumerGroupId)
   }
-  
-  data class Github(
-    val uri: String = "https://api.github.com",
-    // TODO what do we do here if empty? Crash?
-    val token: String? = getenv("GITHUB_TOKEN"),
-  )
-  
-  data class Kafka(
-    val bootstrapServers: String = getenv("BOOTSTRAP_SERVERS") ?: "localhost:9092",
-    val schemaRegistryUrl: String = getenv("SCHEMA_REGISTRY_URL") ?: "http://localhost:8081",
-    val subscriptionTopic: Topic = Topic(getenv("SUBSCRIPTION_TOPIC") ?: "subscriptions", 1, 1),
-    val eventTopic: Topic = Topic(getenv("EVENT_TOPIC") ?: "events", 1, 1),
-    val notificationTopic: Topic = Topic(getenv("NOTIFICATION_TOPIC") ?: "notifications", 1, 1),
-  ) {
-    data class Topic(val name: String, val numPartitions: Int, val replicationFactor: Short)
-    
-    private val eventConsumerGroupId = "github-event-consumer"
-    
-    fun <K, V> consumer(
-      keyDeserializer: KSerializer<K>,
-      valueDeserializer: KSerializer<V>,
-    ): ReceiverSettings<K, V> = ReceiverSettings(
-      bootstrapServers = bootstrapServers,
-      groupId = eventConsumerGroupId,
-      keyDeserializer = AvroSerializer(keyDeserializer),
-      valueDeserializer = AvroSerializer(valueDeserializer)
-    )
-    
-    fun <V> consumer(valueDeserializer: KSerializer<V>): ReceiverSettings<Nothing, V> =
-      ReceiverSettings(
-        bootstrapServers = bootstrapServers,
-        groupId = eventConsumerGroupId,
-        valueDeserializer = AvroSerializer(valueDeserializer)
-      )
-    
-    fun <K, V> producer(
-      keySerializer: KSerializer<K>,
-      valueSerializer: KSerializer<V>,
-    ): ProducerSettings<K, V> = ProducerSettings(
-      bootstrapServers,
-      AvroSerializer(keySerializer),
-      AvroSerializer(valueSerializer)
-    )
-    
-    @Suppress("UNCHECKED_CAST", "ForbiddenVoid")
-    fun <V> producer(valueSerializer: KSerializer<V>): ProducerSettings<Nothing, V> =
-      ProducerSettings<Void, V>(
-        bootstrapServers,
-        VoidSerializer(),
-        AvroSerializer(valueSerializer)
-      ) as ProducerSettings<Nothing, V>
+
+  fun producerProperties() = Properties().apply {
+    put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
   }
 }

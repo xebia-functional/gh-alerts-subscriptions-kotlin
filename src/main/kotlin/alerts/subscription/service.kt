@@ -7,6 +7,7 @@ import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
 import mu.KotlinLogging
+import org.springframework.stereotype.Component
 
 interface SubscriptionService {
   /** Returns all subscriptions for the given [slackUserId], empty if none found */
@@ -25,14 +26,8 @@ interface SubscriptionService {
   suspend fun unsubscribe(slackUserId: SlackUserId, repository: Repository): Either<SlackUserNotFound, Unit>
 }
 
-fun SubscriptionService(
-  subscriptions: SubscriptionsPersistence,
-  users: UserPersistence,
-  producer: SubscriptionProducer,
-  client: GithubClient,
-): SubscriptionService = SqlDelightSubscriptionService(subscriptions, users, producer, client)
-
-private class SqlDelightSubscriptionService(
+@Component
+class SqlDelightSubscriptionService(
   private val subscriptions: SubscriptionsPersistence,
   private val users: UserPersistence,
   private val producer: SubscriptionProducer,

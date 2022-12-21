@@ -4,10 +4,10 @@ import alerts.HttpStatusCodeSerializer
 import alerts.user.SlackUserId
 import alerts.user.UserId
 import com.github.avrokotlin.avro4k.AvroNamespace
-import io.ktor.http.HttpStatusCode
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.springframework.http.HttpStatusCode
 
 @JvmInline
 value class RepositoryId(val serial: Long)

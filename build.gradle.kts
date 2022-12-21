@@ -3,13 +3,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 @Suppress("DSL_SCOPE_VIOLATION") plugins {
   application
-  id(libs.plugins.kotlin.jvm.pluginId)
   alias(libs.plugins.kotlinx.serialization)
-  alias(libs.plugins.sqldelight)
   alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.kover)
-  alias(libs.plugins.ktor)
   id(libs.plugins.detekt.pluginId)
+  id("org.springframework.boot") version "3.0.0"
+  id("io.spring.dependency-management") version "1.1.0"
+  kotlin("jvm")
+  kotlin("plugin.spring") version "1.7.22"
 }
 
 buildscript {
@@ -24,12 +25,6 @@ application {
   mainClass by main
 }
 
-sqldelight {
-  database("SqlDelight") {
-    packageName = "alerts.sqldelight"
-    dialect(libs.sqldelight.postgresql.asString)
-  }
-}
 
 allprojects {
   setupDetekt()
@@ -43,28 +38,13 @@ repositories {
   maven(url = "https://jitpack.io")
 }
 
-ktor {
-  docker {
-    jreVersion.set(io.ktor.plugin.features.JreVersion.JRE_11)
-    localImageName.set("github-alerts-subscriptions-kotlin")
-    imageTag.set("latest")
-    externalRegistry.set(
-      io.ktor.plugin.features.DockerImageRegistry.googleContainerRegistry(
-        projectName = provider { "47deg" },
-        appName = provider { "github-alerts-subscriptions-kotlin" },
-        username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
-        password = providers.environmentVariable("DOCKER_HUB_PASSWORD")
-      )
-    )
-  }
-}
 
 java {
   sourceCompatibility = JavaVersion.VERSION_17
   targetCompatibility = JavaVersion.VERSION_17
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
+tasks.withType<KotlinCompile>().all {
   kotlinOptions.freeCompilerArgs += listOf(
     "-Xopt-in=kotlin.RequiresOptIn",
     "-Xopt-in=kotlin.OptIn",
@@ -89,36 +69,40 @@ tasks {
     useJUnitPlatform()
     extensions.configure(KoverTaskExtension::class) {
       includes.add("alerts.*")
-      excludes.add("alerts.sqldelight")
     }
   }
 }
 
 dependencies {
+  implementation("org.springframework.boot:spring-boot-starter-webflux")
+  implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+  implementation("org.springframework.kafka:spring-kafka")
+  implementation("io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE")
+  implementation("org.jetbrains.kotlin:kotlin-stdlib")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+  implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+  implementation("io.projectreactor.kafka:reactor-kafka:1.3.15")
+
   implementation(libs.bundles.arrow)
-  implementation(libs.suspendapp)
-  implementation(libs.bundles.ktor.server)
-  implementation(libs.bundles.ktor.client)
   implementation(libs.logback.classic)
-  implementation(libs.sqldelight.jdbc)
-  implementation(libs.hikari)
   implementation(libs.postgresql)
   implementation(libs.flyway)
   implementation(libs.klogging)
   implementation(libs.avro4k)
-  implementation(libs.kotlin.kafka)
+
   implementation(libs.kafka.schema.registry)
   implementation(libs.kafka.avro.serializer)
   implementation(libs.avro)
-  implementation(libs.kotlinx.serialization.jsonpath)
-  implementation(libs.micrometer.prometheus)
-  implementation(libs.kotlinx.datetime)
-  implementation(libs.tegral.openApi.ktor)
-  implementation(libs.tegral.openApi.ktor.ui)
 
-  testImplementation(libs.bundles.ktor.client)
+  implementation(libs.kotlinx.serialization.jsonpath)
+
+  implementation(libs.micrometer.prometheus)
+
+  implementation(libs.kotlinx.datetime)
+
+
   testImplementation(libs.testcontainers.postgresql)
   testImplementation(libs.testcontainers.kafka)
-  testImplementation(libs.ktor.server.tests)
   testImplementation(libs.bundles.kotest)
+  testImplementation("org.springframework.boot:spring-boot-starter-test:3.0.0")
 }

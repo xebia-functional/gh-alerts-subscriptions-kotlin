@@ -2,8 +2,8 @@ package alerts.github
 
 import alerts.user.SlackUserId
 import com.github.avrokotlin.avro4k.AvroNamespace
-import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
+import org.springframework.http.HttpStatusCode
 
 @JvmInline
 value class GithubError(val statusCode: HttpStatusCode)

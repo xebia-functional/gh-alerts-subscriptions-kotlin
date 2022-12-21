@@ -1,42 +1,21 @@
 package alerts.github
 
-import alerts.env.Env
+import alerts.env.Github
 import arrow.core.Either
 import arrow.core.continuations.either
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.Schedule
-import arrow.fx.coroutines.fromAutoCloseable
 import arrow.fx.coroutines.retry
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.DefaultRequest
-import io.ktor.client.plugins.cache.HttpCache
-import io.ktor.client.plugins.expectSuccess
-import io.ktor.client.plugins.resources.get
-import io.ktor.http.HttpStatusCode
-import io.ktor.resources.Resource as KtorRes
-import kotlinx.serialization.Serializable
-import mu.KLogger
 import mu.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.reactive.awaitSingle
+import org.springframework.http.HttpStatus
+import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
-}
-
-fun GithubClient(
-  config: Env.Github,
-  retryPolicy: Schedule<Throwable, Unit> = DEFAULT_GITHUB_RETRY_SCHEDULE
-): Resource<GithubClient> = resource {
-  val client = Resource.fromAutoCloseable {
-    HttpClient {
-      install(HttpCache)
-      install(DefaultRequest) { url(config.uri) }
-    }
-  }.bind()
-  val logger = KotlinLogging.logger { }
-  DefaultGithubClient(config, retryPolicy, client, logger)
 }
 
 private const val DEFAULT_GITHUB_RETRY_COUNT = 3
@@ -47,29 +26,33 @@ private val DEFAULT_GITHUB_RETRY_SCHEDULE: Schedule<Throwable, Unit> =
     .and(Schedule.exponential(1.seconds))
     .void()
 
-private class DefaultGithubClient(
-  private val config: Env.Github,
-  private val retryPolicy: Schedule<Throwable, Unit>,
-  private val httpClient: HttpClient,
-  private val logger: KLogger,
+@Component
+class DefaultGithubClient(
+  private val config: Github,
+  private val httpClient: WebClient,
+  private val retryPolicy: Schedule<Throwable, Unit> = DEFAULT_GITHUB_RETRY_SCHEDULE,
 ) : GithubClient {
-  @Serializable
-  @KtorRes("/repos/{owner}/{repo}")
-  class Repo(val owner: String, val repo: String)
-  
+  val logger = KotlinLogging.logger { }
+
   override suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean> = either {
     retryPolicy.retry {
-      val response = httpClient.get(Repo(owner, name)) {
-        config.token?.let { token -> headers.append("Authorization", "Bearer $token") }
-        expectSuccess = false
-      }
-      when (response.status) {
-        HttpStatusCode.OK -> true
-        HttpStatusCode.NotModified -> true
-        HttpStatusCode.NotFound -> false
+      val response = httpClient.get().apply {
+        uri { builder ->
+          builder.path("/repos/{owner}/{name}").build(owner, name)
+        }
+        config.token?.let { token -> header("Authorization", "Bearer $token") }
+      }.retrieve()
+        .onStatus({ true }, { Mono.empty() })
+        .toEntity(String::class.java)
+        .awaitSingle()
+
+      when (response.statusCode) {
+        HttpStatus.OK -> true
+        HttpStatus.NOT_MODIFIED -> true
+        HttpStatus.NOT_FOUND -> false
         else -> {
-          logger.info { "GitHub call failed with status: ${response.status.description}" }
-          shift(GithubError(response.status))
+          logger.info { "GitHub call failed with status: ${response.statusCode}" }
+          shift(GithubError(response.statusCode))
         }
       }
     }

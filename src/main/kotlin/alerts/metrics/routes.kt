@@ -1,11 +1,12 @@
 package alerts.metrics
 
-import alerts.env.Routes
-import io.ktor.server.application.call
-import io.ktor.server.resources.get
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Routing
 import io.micrometer.prometheus.PrometheusMeterRegistry
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
 
-fun Routing.metricsRoute(metrics: PrometheusMeterRegistry) =
-  get<Routes.Metrics> { call.respond(metrics.scrape()) }
+@Controller
+class MetricsController(private val metrics: PrometheusMeterRegistry) {
+  @GetMapping("/metrics")
+  fun metrics(): String =
+    metrics.scrape()
+}

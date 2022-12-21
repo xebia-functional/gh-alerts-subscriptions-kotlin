@@ -1,18 +1,14 @@
 package alerts
 
-import alerts.env.Dependencies
-import alerts.env.Env
-import arrow.continuations.SuspendApp
-import arrow.fx.coroutines.continuations.resource
-import io.ktor.server.netty.Netty
-import kotlinx.coroutines.awaitCancellation
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.boot.runApplication
 
-fun main(): Unit = SuspendApp {
-  val env = Env()
-  resource {
-    val dependencies = Dependencies(env).bind()
-    dependencies.notifications.process().bind()
-    server(Netty, port = env.http.port, host = env.http.host).bind()
-      .application.alertsServer(dependencies)
-  }.use { awaitCancellation() }
+fun main(args: Array<String>) {
+  @Suppress("SpreadOperator")
+  runApplication<CoroutinesApplication>(*args)
 }
+
+@SpringBootApplication
+@ConfigurationPropertiesScan
+class CoroutinesApplication
