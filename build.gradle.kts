@@ -25,9 +25,11 @@ application {
 }
 
 sqldelight {
-  database("SqlDelight") {
-    packageName = "alerts.sqldelight"
-    dialect(libs.sqldelight.postgresql.asString)
+  databases {
+    create("SqlDelight") {
+      packageName.set("alerts.sqldelight")
+      dialect(libs.sqldelight.postgresql.asString)
+    }
   }
 }
 
