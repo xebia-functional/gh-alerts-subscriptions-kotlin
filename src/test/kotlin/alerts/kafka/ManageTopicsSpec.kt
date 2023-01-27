@@ -1,9 +1,9 @@
 package alerts.kafka
 
-import alerts.KafkaContainer
-import alerts.autoCloseable
+import alerts.Kafka
 import alerts.install
 import alerts.invoke
+import arrow.fx.coroutines.autoCloseable
 import io.github.nomisRev.kafka.Admin
 import io.github.nomisRev.kafka.AdminSettings
 import io.github.nomisRev.kafka.await
@@ -14,9 +14,9 @@ import mu.KotlinLogging
 
 class ManageTopicsSpec : StringSpec({
   val logger = KotlinLogging.logger { }
-  val kafka = install(KafkaContainer.resource())
+  val kafka = install { Kafka() }
   val admin = install { autoCloseable { Admin(AdminSettings(kafka().bootstrapServers)) } }
-  val manageTopics = install { manageTopics(kafka(), logger).bind() }
+  val manageTopics = install { manageTopics(kafka(), logger) }
   
   "manageTopics creates topics" {
     val topics = setOf(

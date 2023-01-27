@@ -11,8 +11,7 @@ import alerts.catch
 import arrow.core.Either
 import arrow.core.continuations.either
 import arrow.core.continuations.ensureNotNull
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.continuations.ResourceScope
 import arrow.optics.Optional
 import io.github.nomisrev.JsonPath
 import io.github.nomisrev.path
@@ -28,7 +27,8 @@ import kotlinx.serialization.json.JsonElement
 import mu.KotlinLogging
 
 fun interface NotificationService {
-  fun process(): Resource<Job>
+  context(ResourceScope)
+  suspend fun process(): Job
 }
 
 fun NotificationService(
@@ -47,23 +47,24 @@ private class Notifications(
     val json: String,
     val exception: SerializationException,
   ) : NotificationError
-  
+
   private data class RepoFullNameNotFound(val json: JsonElement) : NotificationError
   private data class CannotExtractRepo(val fullName: String) : NotificationError
-  
+
   private val fullNamePath: Optional<JsonElement, String> = JsonPath.path("repository.full_name.string").string
   private val logger = KotlinLogging.logger { }
-  
-  override fun process(): Resource<Job> = resource {
-    val scope = Resource.coroutineScope(Dispatchers.IO).bind()
-    processor.process { event ->
+
+  context(ResourceScope)
+  override suspend fun process(): Job {
+    val scope = coroutineScope(Dispatchers.IO)
+    return processor.process { event ->
       findSubscribers(event).fold({ error ->
         error.log()
         emptyFlow()
       }, List<SlackNotification>::asFlow)
     }.launchIn(scope)
   }
-  
+
   private suspend fun extractRepo(event: GithubEvent): Either<NotificationError, Repository> =
     either {
       val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
@@ -73,14 +74,14 @@ private class Notifications(
       val (owner, name) = ensureNotNull(fullName.split("/").takeIf { it.size == 2 }) { CannotExtractRepo(fullName) }
       Repository(owner, name)
     }
-  
+
   private suspend fun findSubscribers(event: GithubEvent): Either<NotificationError, List<SlackNotification>> = either {
     val repo = extractRepo(event).bind()
     val userIds = service.findSubscribers(repo)
     val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }
     slackUserIds.map { SlackNotification(it, event.event) }
   }
-  
+
   private fun NotificationError.log(): Unit =
     when (this) {
       is RepoFullNameNotFound -> logger.info { "Didn't find `repository.full_name` in JSON. $json." }

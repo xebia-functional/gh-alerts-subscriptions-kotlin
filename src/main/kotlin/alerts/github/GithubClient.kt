@@ -3,10 +3,9 @@ package alerts.github
 import alerts.env.Env
 import arrow.core.Either
 import arrow.core.continuations.either
-import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
+import arrow.fx.coroutines.ResourceScope
 import arrow.fx.coroutines.Schedule
-import arrow.fx.coroutines.fromAutoCloseable
+import arrow.fx.coroutines.autoCloseable
 import arrow.fx.coroutines.retry
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
@@ -25,18 +24,18 @@ fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
 }
 
-fun GithubClient(
+suspend fun ResourceScope.GithubClient(
   config: Env.Github,
   retryPolicy: Schedule<Throwable, Unit> = DEFAULT_GITHUB_RETRY_SCHEDULE
-): Resource<GithubClient> = resource {
-  val client = Resource.fromAutoCloseable {
+): GithubClient {
+  val client = autoCloseable {
     HttpClient {
       install(HttpCache)
       install(DefaultRequest) { url(config.uri) }
     }
-  }.bind()
+  }
   val logger = KotlinLogging.logger { }
-  DefaultGithubClient(config, retryPolicy, client, logger)
+  return DefaultGithubClient(config, retryPolicy, client, logger)
 }
 
 private const val DEFAULT_GITHUB_RETRY_COUNT = 3
