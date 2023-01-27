@@ -99,6 +99,7 @@ tasks {
 dependencies {
   implementation(libs.bundles.arrow)
   implementation(libs.suspendapp)
+  implementation(libs.suspendapp.ktor)
   implementation(libs.bundles.ktor.server)
   implementation(libs.bundles.ktor.client)
   implementation(libs.logback.classic)

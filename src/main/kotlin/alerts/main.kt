@@ -3,7 +3,7 @@ package alerts
 import alerts.env.Dependencies
 import alerts.env.Env
 import arrow.continuations.SuspendApp
-import arrow.fx.coroutines.continuations.resource
+import arrow.continuations.ktor.server
 import arrow.fx.coroutines.resourceScope
 import io.ktor.server.netty.Netty
 import kotlinx.coroutines.awaitCancellation
