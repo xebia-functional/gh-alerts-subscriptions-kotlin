@@ -12,7 +12,7 @@ fun main(): Unit = SuspendApp {
   val env = Env()
   resourceScope {
     val dependencies = Dependencies(env)
-    dependencies.notifications.process().bind()
+    dependencies.notifications.process()
     server(Netty, port = env.http.port, host = env.http.host) {
       alertsServer(dependencies)
     }
