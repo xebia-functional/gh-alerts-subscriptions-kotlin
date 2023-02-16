@@ -14,10 +14,10 @@ import arrow.fx.coroutines.autoCloseable
 import arrow.fx.coroutines.closeable
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 
-suspend fun ResourceScope.SqlDelight(env: Env.Postgres): SqlDelight {
-  val dataSource = hikari(env)
+suspend fun ResourceScope.SqlDelight(dataSource: DataSource): SqlDelight {
   val driver = closeable { dataSource.asJdbcDriver() }
   Flyway.configure().dataSource(dataSource).load().migrate()
   return SqlDelight(
@@ -28,7 +28,7 @@ suspend fun ResourceScope.SqlDelight(env: Env.Postgres): SqlDelight {
   )
 }
 
-private suspend fun ResourceScope.hikari(env: Env.Postgres): HikariDataSource = autoCloseable {
+suspend fun ResourceScope.hikari(env: Env.Postgres): HikariDataSource = autoCloseable {
   HikariDataSource(
     HikariConfig().apply {
       jdbcUrl = env.url
