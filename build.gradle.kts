@@ -47,9 +47,9 @@ repositories {
 
 ktor {
   docker {
-    jreVersion.set(io.ktor.plugin.features.JreVersion.JRE_17)
+    jreVersion.set(io.ktor.plugin.features.JreVersion.JRE_11)
     localImageName.set("github-alerts-subscriptions-kotlin")
-    imageTag.set("1.3")
+    imageTag.set("latest")
     externalRegistry.set(
       io.ktor.plugin.features.DockerImageRegistry.googleContainerRegistry(
         projectName = provider { "47deg" },
@@ -102,6 +102,7 @@ dependencies {
   implementation(libs.suspendapp.ktor)
   implementation(libs.bundles.ktor.server)
   implementation(libs.bundles.ktor.client)
+  implementation(libs.bundles.cohort)
   implementation(libs.logback.classic)
   implementation(libs.sqldelight.jdbc)
   implementation(libs.hikari)
@@ -118,11 +119,6 @@ dependencies {
   implementation(libs.kotlinx.datetime)
   implementation(libs.tegral.openApi.ktor)
   implementation(libs.tegral.openApi.ktor.ui)
-
-  implementation("com.sksamuel.cohort:cohort-core:1.7.3")
-  implementation("com.sksamuel.cohort:cohort-ktor2:1.7.3")
-  implementation("com.sksamuel.cohort:cohort-kafka:1.7.3")
-  implementation("com.sksamuel.cohort:cohort-hikari:1.7.3")
 
   testImplementation(libs.bundles.ktor.client)
   testImplementation(libs.testcontainers.postgresql)
