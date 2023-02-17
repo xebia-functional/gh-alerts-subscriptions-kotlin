@@ -36,17 +36,14 @@ suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
   val users = SqlDelightUserPersistence(sqlDelight.usersQueries, slackUsersCounter)
   val subscriptionsPersistence =
     SqlDelightSubscriptionsPersistence(sqlDelight.subscriptionsQueries, sqlDelight.repositoriesQueries)
-
   val githubEventProcessor = EnvGithubEventProcessor(env.kafka)
-  val admin =
-    autoCloseable { AdminClient.create(mapOf(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG to env.kafka.bootstrapServers)) }
   val producer = SubscriptionProducer(env.kafka)
-
   val client = GithubClient(env.github)
 
+  val kafkaHealthCheck = kafkaHealthCheck(env.kafka)
   val checks = HealthCheckRegistry(Dispatchers.Default) {
     register(HikariConnectionsHealthCheck(dataSource, 1), 5.seconds)
-    register(KafkaClusterHealthCheck(admin), 5.seconds)
+    register(kafkaHealthCheck, 5.seconds)
   }
 
   return Dependencies(
@@ -56,4 +53,3 @@ suspend fun ResourceScope.Dependencies(env: Env): Dependencies {
     checks
   )
 }
-
