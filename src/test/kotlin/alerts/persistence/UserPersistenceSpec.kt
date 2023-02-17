@@ -3,6 +3,7 @@ package alerts.persistence
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.SqlDelight
+import alerts.env.hikari
 import alerts.install
 import alerts.invoke
 import alerts.user.SlackUserId
@@ -19,7 +20,7 @@ class UserPersistenceSpec : StringSpec({
   val slackUserId = SlackUserId("test-user-id")
   val postgres = install(PostgreSQLContainer.resource())
   val persistence = install {
-    val sqlDelight = SqlDelight(postgres().config())
+    val sqlDelight = SqlDelight(hikari(postgres.get().config()))
     SqlDelightUserPersistence(sqlDelight.usersQueries, TestMetrics.slackUsersCounter)
   }
   
