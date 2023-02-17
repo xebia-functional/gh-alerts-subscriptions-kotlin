@@ -5,6 +5,7 @@ import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.Env
 import alerts.env.SqlDelight
+import alerts.env.hikari
 import alerts.github.GithubError
 import alerts.install
 import alerts.invoke
@@ -40,7 +41,7 @@ import org.apache.kafka.common.TopicPartition
 class SubscriptionServiceSpec : StringSpec({
   val kafka = install { Kafka() }
   val postgres = install(PostgreSQLContainer.resource())
-  val sqlDelight = install { SqlDelight(postgres().config()) }
+  val sqlDelight = install { SqlDelight(hikari(postgres.get().config())) }
   val producer = install { SubscriptionProducer(kafka()) }
   
   val subscriptions = install {
