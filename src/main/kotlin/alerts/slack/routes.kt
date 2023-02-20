@@ -2,15 +2,16 @@ package alerts.slack
 
 import alerts.badRequest
 import alerts.env.Routes
-import alerts.subscription.Repository
-import alerts.user.SlackUserId
-import alerts.subscription.Subscription
 import alerts.respond
-import alerts.subscription.SubscriptionService
 import alerts.statusCode
+import alerts.subscription.Repository
+import alerts.subscription.Subscription
+import alerts.subscription.SubscriptionService
+import alerts.user.SlackUserId
 import arrow.core.Either
-import arrow.core.continuations.either
-import arrow.core.continuations.ensureNotNull
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError

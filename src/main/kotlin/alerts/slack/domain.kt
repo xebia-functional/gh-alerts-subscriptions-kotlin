@@ -1,7 +1,7 @@
 package alerts.slack
 
-import alerts.user.SlackUserId
 import alerts.subscription.Repository
+import alerts.user.SlackUserId
 import kotlinx.serialization.Serializable
 
 @Serializable

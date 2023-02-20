@@ -1,11 +1,12 @@
 package alerts.github
 
+import io.ktor.resources.Resource as KtorRes
 import alerts.env.Env
 import arrow.core.Either
-import arrow.core.continuations.either
+import arrow.core.raise.either
 import arrow.fx.coroutines.Resource
-import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.Schedule
+import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.fromAutoCloseable
 import arrow.fx.coroutines.retry
 import io.ktor.client.HttpClient
@@ -14,12 +15,11 @@ import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.plugins.resources.get
 import io.ktor.http.HttpStatusCode
-import io.ktor.resources.Resource as KtorRes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 import kotlinx.serialization.Serializable
 import mu.KLogger
 import mu.KotlinLogging
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>

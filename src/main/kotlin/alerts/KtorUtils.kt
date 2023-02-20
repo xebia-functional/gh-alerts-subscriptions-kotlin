@@ -15,13 +15,13 @@ import io.ktor.server.engine.ApplicationEngineFactory
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respond
 import io.ktor.util.pipeline.PipelineContext
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Ktor [ApplicationEngine] as a [Resource].

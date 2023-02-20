@@ -1,18 +1,18 @@
 package alerts.https.routes
 
 import alerts.github.GithubClient
-import alerts.subscription.SubscriptionProducer
 import alerts.subscription.Repository
-import alerts.user.SlackUserId
 import alerts.subscription.Subscription
-import alerts.subscription.SubscriptionsPersistence
-import alerts.user.User
-import alerts.user.UserId
-import alerts.user.UserPersistence
+import alerts.subscription.SubscriptionProducer
 import alerts.subscription.SubscriptionService
+import alerts.subscription.SubscriptionsPersistence
 import alerts.subscription.UserNotFound
 import alerts.subscription.subscriptionRoutes
 import alerts.testApp
+import alerts.user.SlackUserId
+import alerts.user.User
+import alerts.user.UserId
+import alerts.user.UserPersistence
 import arrow.core.Either
 import arrow.core.NonEmptyList
 import arrow.core.right

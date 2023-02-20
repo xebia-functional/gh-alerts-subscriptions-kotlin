@@ -1,12 +1,12 @@
 package alerts.env
 
-import alerts.subscription.RepositoryId
-import alerts.user.SlackUserId
-import alerts.user.UserId
 import alerts.sqldelight.Repositories
 import alerts.sqldelight.SqlDelight
 import alerts.sqldelight.Subscriptions
 import alerts.sqldelight.Users
+import alerts.subscription.RepositoryId
+import alerts.user.SlackUserId
+import alerts.user.UserId
 import app.cash.sqldelight.ColumnAdapter
 import app.cash.sqldelight.driver.jdbc.asJdbcDriver
 import arrow.fx.coroutines.Resource

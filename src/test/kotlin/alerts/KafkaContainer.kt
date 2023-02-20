@@ -5,6 +5,7 @@ import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.continuations.resource
 import arrow.fx.coroutines.parZip
 import arrow.fx.coroutines.release
+import java.lang.System.getProperty
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -13,7 +14,6 @@ import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
-import java.lang.System.getProperty
 
 /** A KafkaContainer that is set up in the same as docker-compose.yml */
 object KafkaContainer {

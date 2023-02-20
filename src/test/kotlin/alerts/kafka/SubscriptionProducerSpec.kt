@@ -9,7 +9,6 @@ import alerts.subscription.SubscriptionEventRecord
 import alerts.subscription.SubscriptionKey
 import alerts.subscription.SubscriptionProducer
 import io.github.nomisRev.kafka.receiver.KafkaReceiver
-import io.kotest.assertions.arrow.fx.coroutines.extension
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.collect
