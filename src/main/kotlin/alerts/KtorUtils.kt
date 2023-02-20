@@ -8,21 +8,14 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
-import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
-import io.ktor.server.engine.ApplicationEngine
-import io.ktor.server.engine.ApplicationEngineFactory
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respond
 import io.ktor.util.pipeline.PipelineContext
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Utility to create a [CoroutineScope] as a [Resource].

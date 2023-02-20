@@ -2,13 +2,13 @@ package alerts.env
 
 import alerts.github.EnvGithubEventProcessor
 import alerts.github.GithubClient
-import alerts.subscription.SubscriptionProducer
 import alerts.metrics.metricsRegistry
 import alerts.metrics.slackUsersCounter
 import alerts.notification.NotificationService
-import alerts.user.SqlDelightUserPersistence
 import alerts.subscription.SqlDelightSubscriptionsPersistence
+import alerts.subscription.SubscriptionProducer
 import alerts.subscription.SubscriptionService
+import alerts.user.SqlDelightUserPersistence
 import arrow.fx.coroutines.ResourceScope
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import io.prometheus.client.Counter

@@ -1,7 +1,7 @@
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
-import org.gradle.api.provider.Provider;
-import org.gradle.plugin.use.PluginDependency
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
+import org.gradle.plugin.use.PluginDependency
 
 @Suppress("UnstableApiUsage")
 val Provider<PluginDependency>.pluginId: String

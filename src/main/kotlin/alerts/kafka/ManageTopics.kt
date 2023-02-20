@@ -1,23 +1,20 @@
 package alerts.kafka
 
+import alerts.catch
 import alerts.env.Env
 import alerts.github.GithubEvent
 import alerts.github.SlackNotification
-import alerts.catch
 import alerts.subscription.SubscriptionEvent
 import alerts.subscription.SubscriptionKey
-import arrow.fx.coroutines.Resource
 import arrow.fx.coroutines.ResourceScope
 import arrow.fx.coroutines.autoCloseable
-import arrow.fx.coroutines.continuations.resource
-import arrow.fx.coroutines.fromAutoCloseable
 import com.github.avrokotlin.avro4k.Avro
-import io.github.nomisRev.kafka.Admin
-import io.github.nomisRev.kafka.AdminSettings
-import io.github.nomisRev.kafka.createTopic
 import io.confluent.kafka.schemaregistry.avro.AvroSchema
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
+import io.github.nomisRev.kafka.Admin
+import io.github.nomisRev.kafka.AdminSettings
+import io.github.nomisRev.kafka.createTopic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationStrategy

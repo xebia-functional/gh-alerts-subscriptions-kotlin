@@ -3,12 +3,12 @@ package alerts
 import alerts.env.Env
 import arrow.fx.coroutines.ResourceScope
 import arrow.fx.coroutines.parZip
+import java.lang.System.getProperty
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
-import java.lang.System.getProperty
 
 /** A KafkaContainer that is set up in the same as docker-compose.yml */
 suspend fun ResourceScope.Kafka(): Env.Kafka {

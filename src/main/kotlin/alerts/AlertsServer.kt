@@ -8,12 +8,12 @@ import alerts.slack.slackRoutes
 import alerts.subscription.subscriptionRoutes
 import guru.zoroark.tegral.openapi.ktor.TegralOpenApiKtor
 import guru.zoroark.tegral.openapi.ktorui.TegralSwaggerUiKtor
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.defaultheaders.DefaultHeaders
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.resources.Resources
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.routing

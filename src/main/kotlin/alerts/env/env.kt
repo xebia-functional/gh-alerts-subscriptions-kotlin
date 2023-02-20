@@ -3,9 +3,9 @@ package alerts.env
 import alerts.kafka.AvroSerializer
 import io.github.nomisRev.kafka.ProducerSettings
 import io.github.nomisRev.kafka.receiver.ReceiverSettings
+import java.lang.System.getenv
 import kotlinx.serialization.KSerializer
 import org.apache.kafka.common.serialization.VoidSerializer
-import java.lang.System.getenv
 
 private const val PORT: Int = 8080
 private const val JDBC_URL: String = "jdbc:postgresql://localhost:5432/alerts"
