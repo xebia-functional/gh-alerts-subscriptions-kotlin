@@ -1,11 +1,11 @@
 package alerts
 
 import alerts.env.Dependencies
-import alerts.health.healthRoute
 import alerts.metrics.metricsRoute
 import alerts.openapi.openApiRoutes
 import alerts.slack.slackRoutes
 import alerts.subscription.subscriptionRoutes
+import com.sksamuel.cohort.ktor.Cohort
 import guru.zoroark.tegral.openapi.ktor.TegralOpenApiKtor
 import guru.zoroark.tegral.openapi.ktorui.TegralSwaggerUiKtor
 import io.ktor.server.application.Application
@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 
 fun Application.alertsServer(dependencies: Dependencies) {
   configure()
+  healthChecks(dependencies)
   metrics(dependencies)
   routes(dependencies)
 }
@@ -43,6 +44,13 @@ fun Application.configure() {
   install(TegralSwaggerUiKtor)
 }
 
+private fun Application.healthChecks(dependencies: Dependencies) {
+  install(Cohort) {
+    healthcheck("/readiness", dependencies.healthCheck)
+    healthcheck("/health", dependencies.healthCheck)
+  }
+}
+
 private fun Application.metrics(dependencies: Dependencies) {
   install(MicrometerMetrics) {
     registry = dependencies.metrics
@@ -51,7 +59,6 @@ private fun Application.metrics(dependencies: Dependencies) {
 
 private fun Application.routes(dependencies: Dependencies): Routing =
   routing {
-    healthRoute()
     metricsRoute(dependencies.metrics)
     subscriptionRoutes(dependencies.subscriptions)
     slackRoutes(dependencies.subscriptions)

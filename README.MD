@@ -32,10 +32,11 @@ Start up services (Postgres, Kafka, Schema Registry, etc.) with the app
 docker compose -f docker-compose.yml -f docker-compose.local.yml -f docker-compose-app.yml up -d
 ```
 
-You can ping the service with
+You can check the readiness or health of the service with
 
 ```shell
-curl --request GET 'http://localhost:8080/ping'
+curl --request GET 'http://localhost:8080/readiness'
+curl --request GET 'http://localhost:8080/health'
 ```
 ```text
 pong

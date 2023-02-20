@@ -102,6 +102,7 @@ dependencies {
   implementation(libs.suspendapp.ktor)
   implementation(libs.bundles.ktor.server)
   implementation(libs.bundles.ktor.client)
+  implementation(libs.bundles.cohort)
   implementation(libs.logback.classic)
   implementation(libs.sqldelight.jdbc)
   implementation(libs.hikari)

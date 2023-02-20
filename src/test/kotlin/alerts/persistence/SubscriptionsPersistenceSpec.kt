@@ -3,6 +3,7 @@ package alerts.persistence
 import alerts.PostgreSQLContainer
 import alerts.TestMetrics
 import alerts.env.SqlDelight
+import alerts.env.hikari
 import alerts.install
 import alerts.invoke
 import alerts.subscription.Repository
@@ -27,7 +28,7 @@ import kotlinx.datetime.toLocalDateTime
 class SubscriptionsPersistenceSpec : StringSpec({
   
   val postgres = install(PostgreSQLContainer.resource())
-  val sqlDelight = install { SqlDelight(postgres.get().config()) }
+  val sqlDelight = install { SqlDelight(hikari(postgres.get().config())) }
   val persistence = install {
     SqlDelightSubscriptionsPersistence(sqlDelight().subscriptionsQueries, sqlDelight().repositoriesQueries)
   }

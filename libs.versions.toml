@@ -26,6 +26,7 @@ kafka = "7.3.1"
 avro = "1.11.1"
 prometheus = "1.10.3"
 tegralOpenApi = "0.0.3"
+cohort = "1.7.3"
 
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
@@ -75,6 +76,10 @@ avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "prometheus" }
 tegral-openApi-ktor = { module = "guru.zoroark.tegral:tegral-openapi-ktor", version.ref = "tegralOpenApi" }
 tegral-openApi-ktor-ui = { module = "guru.zoroark.tegral:tegral-openapi-ktorui", version.ref = "tegralOpenApi" }
+cohort-core = { module ="com.sksamuel.cohort:cohort-core", version.ref = "cohort" }
+cohort-ktor = { module = "com.sksamuel.cohort:cohort-ktor2", version.ref = "cohort" }
+cohort-kafka = { module = "com.sksamuel.cohort:cohort-kafka", version.ref = "cohort" }
+cohort-hikari = { module = "com.sksamuel.cohort:cohort-hikari", version.ref = "cohort" }
 
 [bundles]
 arrow = ["arrow-core", "arrow-fx"]
@@ -102,6 +107,12 @@ kotest = [
     "kotest-runnerJUnit5",
     "kotest-arrow",
     "kotest-arrow-fx"
+]
+cohort = [
+    "cohort-core",
+    "cohort-ktor",
+    "cohort-kafka",
+    "cohort-hikari"
 ]
 
 [plugins]
