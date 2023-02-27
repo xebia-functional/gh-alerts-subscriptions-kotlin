@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.kover)
   id(libs.plugins.detekt.pluginId)
-  id("org.springframework.boot") version "3.0.0"
+  id("org.springframework.boot") version "3.0.3"
   id("io.spring.dependency-management") version "1.1.0"
   kotlin("jvm")
   kotlin("plugin.spring") version "1.7.22"
@@ -76,6 +76,7 @@ tasks {
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+  implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.kafka:spring-kafka")
   implementation("io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE")
   implementation("org.jetbrains.kotlin:kotlin-stdlib")

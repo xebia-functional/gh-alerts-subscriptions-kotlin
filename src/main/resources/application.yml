@@ -33,12 +33,12 @@ spring:
   config:
     import: optional:file:.env[.properties]
   r2dbc:
-    url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5433/alerts}
+    url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5432/alerts}
     username: ${POSTGRES_USER:test}
     password: ${POSTGRES_USER:test}
 
 flyway:
-  url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5433/alerts}
+  url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5432/alerts}
   schemas: SUBSCRIPTIONSSERVICE
   user: ${POSTGRES_USER:test}
   password: ${POSTGRES_USER:test}
