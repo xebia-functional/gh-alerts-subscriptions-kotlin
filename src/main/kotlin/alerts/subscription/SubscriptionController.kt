@@ -6,7 +6,6 @@ import arrow.core.merge
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.ResponseEntity
@@ -18,13 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 
 @Controller
-class SubscriptionController @Autowired constructor(
+class SubscriptionController(
   private val service: SubscriptionService,
   private val clock: Clock,
   private val timeZone: TimeZone
 ) {
   @GetMapping("/subscription")
-  suspend fun get(@RequestParam("slackUserId") slackUserId: String): ResponseEntity<Subscriptions> =
+  suspend fun get(
+    @RequestParam("slackUserId") slackUserId: String
+  ): ResponseEntity<Subscriptions> =
     either {
       val subscriptions = service.findAll(SlackUserId(slackUserId))
         .mapLeft { ResponseEntity<Subscriptions>(BAD_REQUEST) }

@@ -10,6 +10,7 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.descriptors.element
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 import org.springframework.http.HttpStatusCode
@@ -50,7 +51,7 @@ object HttpStatusCodeSerializer : KSerializer<HttpStatusCode> {
       HttpStatusCode.valueOf(requireNotNull(value) { "Value property missing HttpStatusCode" })
     }
 
-  override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: HttpStatusCode) =
+  override fun serialize(encoder: Encoder, value: HttpStatusCode) =
     encoder.encodeStructure(descriptor) {
       encodeIntElement(descriptor, 0, value.value())
     }
