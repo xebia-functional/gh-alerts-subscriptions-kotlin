@@ -49,3 +49,7 @@ springdoc:
     swagger-ui:
         use-root-path: true
 
+management:
+  endpoint:
+    health:
+      show-details: always
