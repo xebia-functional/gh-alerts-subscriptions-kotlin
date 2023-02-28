@@ -2,6 +2,10 @@ package alerts.subscription
 
 import alerts.user.UserId
 import arrow.core.Either
+import arrow.core.traverse
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.LocalDateTime
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
@@ -16,7 +20,9 @@ data class SubscriptionDto(
   val createdAt: LocalDateTime
 )
 
-interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDto, Long>
+interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDto, Long> {
+  fun findAllByRepository(repository: Repository): Flow<SubscriptionDto>
+}
 
 interface SubscriptionsPersistence {
   suspend fun findAll(user: UserId): List<Subscription>
@@ -33,18 +39,23 @@ interface SubscriptionsPersistence {
 
 @Component
 class DefaultSubscriptionsPersistence(
- private val repo: SubscriptionRepo
+  private val repo: SubscriptionRepo
 ): SubscriptionsPersistence {
-  override suspend fun findAll(user: UserId): List<Subscription> {
-    TODO("Not yet implemented")
-  }
+  override suspend fun findAll(user: UserId): List<Subscription> =
+    repo.findAllById(listOf(user.serial)).map { subscription ->
+      Subscription(subscription.repository, subscription.createdAt)
+    }.toList()
 
-  override suspend fun findSubscribers(repository: Repository): List<UserId> {
-    TODO("Not yet implemented")
-  }
+  override suspend fun findSubscribers(repository: Repository): List<UserId> =
+    repo.findAllByRepository(repository).map { subscription ->
+      UserId(subscription.id)
+    }.toList()
 
   override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> {
     TODO("Not yet implemented")
+//    subscription.traverse { (repository, subscribedAt) ->
+//      val repoId = repo.save(Repository(repository.owner, repository.name))
+//    }
   }
 
   override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) {
