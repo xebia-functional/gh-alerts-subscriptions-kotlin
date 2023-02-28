@@ -2,10 +2,9 @@ package alerts.health
 
 import alerts.env.Kafka
 import arrow.core.Either
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
 import org.springframework.boot.actuate.health.Health
 import org.springframework.boot.actuate.health.HealthIndicator
 import org.springframework.kafka.core.KafkaAdmin
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Component
 class KafkaHealthIndicator(
     private val kafka: Kafka,
     private val kafkaAdmin: KafkaAdmin,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val scope: CoroutineScope
 ) : HealthIndicator {
 
     override fun health(): Health =
@@ -28,7 +27,7 @@ class KafkaHealthIndicator(
 
     suspend fun doHealthCheck(): Either<Throwable, Unit> =
         Either.catch {
-            withContext(dispatcher) {
+            withContext(scope.coroutineContext) {
                 kafkaAdmin.describeTopics(
                     kafka.subscription.name,
                     kafka.event.name,
