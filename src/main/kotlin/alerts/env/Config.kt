@@ -8,7 +8,6 @@ import alerts.subscription.SubscriptionKey
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import io.prometheus.client.Counter
-import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.datetime.Clock
@@ -17,18 +16,15 @@ import org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
+import org.flywaydb.core.Flyway
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.io.ClassPathResource
 import org.springframework.kafka.config.TopicBuilder
 import org.springframework.kafka.core.KafkaAdmin
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate
 import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
-import org.springframework.r2dbc.connection.init.CompositeDatabasePopulator
-import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer
-import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kafka.sender.SenderOptions
@@ -127,16 +123,12 @@ class AppConfig {
       .replicas(kafka.subscription.replicationFactor.toInt())
       .build()
 
-  @Bean
-  fun databaseInitializer(connectionFactory: ConnectionFactory) =
-    ConnectionFactoryInitializer().apply {
-      setConnectionFactory(connectionFactory)
-      setDatabasePopulator(
-        CompositeDatabasePopulator().apply {
-          addPopulators(ResourceDatabasePopulator(ClassPathResource("db/migration/V1__Initial_Setup.sql")))
-        }
-      )
-    }
+    @Bean
+    fun flyway(flywayProperties: FlywayProperties): Flyway =
+      Flyway(Flyway.configure()
+        .schemas(flywayProperties.schemas)
+        .dataSource(flywayProperties.url, flywayProperties.user, flywayProperties.password)
+      ).apply { migrate() }
 }
 
 private object NothingSerializer : Serializer<Nothing> {

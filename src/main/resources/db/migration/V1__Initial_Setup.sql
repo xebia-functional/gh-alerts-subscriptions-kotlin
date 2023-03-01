@@ -1,15 +1,15 @@
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   user_id BIGSERIAL PRIMARY KEY,
   slack_user_id VARCHAR UNIQUE NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS repositories (
+CREATE TABLE repositories (
   repository_id BIGSERIAL PRIMARY KEY,
   owner VARCHAR NOT NULL,
   repository VARCHAR NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS subscriptions (
+CREATE TABLE subscriptions (
   user_id BIGSERIAL NOT NULL,
   repository_id BIGSERIAL NOT NULL,
   subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

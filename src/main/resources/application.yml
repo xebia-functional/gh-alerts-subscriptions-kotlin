@@ -33,15 +33,14 @@ spring:
   config:
     import: optional:file:.env[.properties]
   r2dbc:
-    url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5432/alerts}
+    url: ${POSTGRES_R2DBC_URL:r2dbc:postgresql://localhost:5432/alerts}
     username: ${POSTGRES_USER:test}
     password: ${POSTGRES_USER:test}
-
-flyway:
-  url: ${POSTGRES_URL:r2dbc:postgresql://localhost:5432/alerts}
-  schemas: SUBSCRIPTIONSSERVICE
-  user: ${POSTGRES_USER:test}
-  password: ${POSTGRES_USER:test}
+  flyway:
+    url: ${POSTGRES_JDBC_URL:jdbc:postgresql://localhost:5432/alerts}
+    schemas: SUBSCRIPTIONSSERVICE
+    user: ${POSTGRES_USER:test}
+    password: ${POSTGRES_USER:test}
 
 springdoc:
     enable-native-support: true
@@ -53,3 +52,8 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    ping:
+      enabled: false
+    diskspace:
+      enabled: false
