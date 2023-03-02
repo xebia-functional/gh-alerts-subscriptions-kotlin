@@ -52,8 +52,19 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState, r2dbc, kafka, flyway
   health:
     ping:
       enabled: false
     diskspace:
       enabled: false
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true

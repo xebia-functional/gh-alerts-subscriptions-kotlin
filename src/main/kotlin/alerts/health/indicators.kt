@@ -29,7 +29,7 @@ class KafkaHealthIndicator(
         kafka.subscription.name,
         kafka.event.name,
         kafka.notification.name
-    ).let { }
+    )
 })
 
 @Component
