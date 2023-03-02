@@ -61,5 +61,5 @@ class DefaultUserPersistence(
       (queries.findBySlackUserId(slackUserId.slackUserId) ?: queries.insertSlackUserId(slackUserId.slackUserId))
         .let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
         .also { slackUsersCounter.inc() }
-    }!!
+    } ?: error("Failed to insert slack user")
 }

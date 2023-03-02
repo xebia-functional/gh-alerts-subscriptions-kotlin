@@ -101,6 +101,8 @@ dependencies {
 
   implementation(libs.kotlinx.datetime)
 
+  runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.89.Final:osx-aarch_64")
+
 
   testImplementation(libs.testcontainers.postgresql)
   testImplementation(libs.testcontainers.kafka)

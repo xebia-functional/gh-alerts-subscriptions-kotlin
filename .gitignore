@@ -170,3 +170,6 @@ gradle-app.setting
 
 kotlin-js-store
 *.hprof
+
+# Env
+.env
