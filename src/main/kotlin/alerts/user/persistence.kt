@@ -7,21 +7,23 @@ import kotlinx.coroutines.flow.toList
 import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.stereotype.Component
 
-data class UserDto(
+@Table(name = "users")
+data class UserDTO(
   @Id
   @Column("userId")
   val userId: Long,
   val slackUserId: String
 )
 
-interface UserRepo : CoroutineCrudRepository<UserDto, Long> {
-  suspend fun findBySlackUserId(slackUserId: String): UserDto?
+interface UserRepo : CoroutineCrudRepository<UserDTO, Long> {
+  suspend fun findBySlackUserId(slackUserId: String): UserDTO?
 
   @Query("INSERT INTO users(slack_user_id) VALUES (:slackUserId) RETURNING user_id")
-  suspend fun insertSlackUserId(slackUserId: String): UserDto
+  suspend fun insertSlackUserId(slackUserId: String): UserDTO
 }
 
 interface UserPersistence {
