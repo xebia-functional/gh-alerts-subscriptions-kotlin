@@ -9,28 +9,33 @@ import arrow.core.traverse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import org.postgresql.util.PSQLException
 import org.postgresql.util.PSQLState
 import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Query
+import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
+import java.time.LocalDateTime
 
 @Table(value = "subscriptions")
 data class SubscriptionDTO(
-    @Id val id: Long,
     val owner: String,
-    val repository: Repository,
+    val repository: String,
+    @Column("subscribed_at")
     val subscribedAt: LocalDateTime
 )
 
 @Table(value = "repositories")
 data class RepositoryDTO(
-  @Id val id: Long,
+  @Id
+  @Column("repository_id")
+  val id: Long,
   val owner: String,
   val repository: String
 )
@@ -42,7 +47,7 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
              subscriptions.subscribed_at
       FROM repositories
       INNER JOIN subscriptions ON subscriptions.repository_id = repositories.repository_id
-      WHERE subscriptions.user_id = :userId;
+      WHERE subscriptions.user_id = :userId
     """)
     fun findAllByUserId(userId: Long): Flow<SubscriptionDTO>
 
@@ -51,14 +56,14 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
       FROM subscriptions
       INNER JOIN repositories ON subscriptions.repository_id = repositories.repository_id
       WHERE repositories.owner = :repositoryOwner
-      AND   repositories.repository = :repositoryName;
+      AND   repositories.repository = :repositoryName
     """)
     fun findAllSubscribers(repositoryOwner: String, repositoryName: String): Flow<UserId>
 
   @Query("""
     INSERT INTO subscriptions (user_id, repository_id, subscribed_at)
     VALUES (:userId, :repositoryId, :subscribedAt)
-    ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING
     """)
     suspend fun insert(userId: Long, repositoryId: Long, subscribedAt: LocalDateTime)
 }
@@ -68,7 +73,7 @@ interface RepositoryRepo : CoroutineCrudRepository<RepositoryDTO, Long> {
     INSERT INTO repositories(owner, repository)
     VALUES (:repositoryOwner, :repositoryName)
     ON CONFLICT DO NOTHING
-    RETURNING repository_id;
+    RETURNING repository_id
   """)
   suspend fun insert(repositoryOwner: String, repositoryName: String): RepositoryId
 }
@@ -89,31 +94,35 @@ interface SubscriptionsPersistence {
 @Component
 class DefaultSubscriptionsPersistence(
     private val subscriptions: SubscriptionRepo,
-    private val repositories: RepositoryRepo
+    private val repositories: RepositoryRepo,
+    private val transactionOperator: TransactionalOperator
 ) : SubscriptionsPersistence {
     override suspend fun findAll(user: UserId): List<Subscription> =
       subscriptions.findAllByUserId(user.serial).map { subscription ->
-            Subscription(subscription.repository, subscription.subscribedAt)
+            Subscription(
+                Repository(subscription.owner, subscription.repository),
+                subscription.subscribedAt.toKotlinLocalDateTime()
+            )
         }.toList()
 
     override suspend fun findSubscribers(repository: Repository): List<UserId> =
       subscriptions.findAllSubscribers(repository.owner, repository.name).toList()
 
-    @Transactional
+
     override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
-      subscription.traverse { (repository, subscribedAt) ->
-        val repoId = repositories.insert(repository.owner, repository.name)
+        transactionOperator.executeAndAwait {
+            subscription.traverse { (repository, subscribedAt) ->
+                val repoId = repositories.insert(repository.owner, repository.name)
 
-        catch({
-          subscriptions.insert(user.serial, repoId.serial, subscribedAt)
-        }) { error: PSQLException ->
-          if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
-          else throw error
-        }
-      }.fold({ it.left() }, { Unit.right() })
+                catch({
+                    subscriptions.insert(user.serial, repoId.serial, subscribedAt.toJavaLocalDateTime())
+                }) { error: PSQLException ->
+                    if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
+                    else throw error
+                }
+            }.fold({ it.left() }, { Unit.right() })
+        }!!
 
-
-    @Transactional
     override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) {
         TODO("Not yet implemented")
     }

@@ -78,7 +78,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.kafka:spring-kafka")
-  implementation("io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE")
+  implementation("org.postgresql:r2dbc-postgresql:1.0.1.RELEASE")
   implementation("org.jetbrains.kotlin:kotlin-stdlib")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")

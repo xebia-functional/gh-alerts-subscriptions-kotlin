@@ -21,10 +21,13 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories
 import org.springframework.kafka.config.TopicBuilder
 import org.springframework.kafka.core.KafkaAdmin
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate
 import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
+import org.springframework.r2dbc.connection.R2dbcTransactionManager
+import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kafka.sender.SenderOptions
