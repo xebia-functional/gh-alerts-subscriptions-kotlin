@@ -41,6 +41,7 @@ data class RepositoryDTO(
 )
 
 interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
+
     @Query("""
         SELECT repositories.owner,
              repositories.repository,
@@ -49,7 +50,7 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
         INNER JOIN subscriptions ON subscriptions.repository_id = repositories.repository_id
         WHERE subscriptions.user_id = :userId
     """)
-    fun findAllByUserId(userId: Long): Flow<SubscriptionDTO>
+    fun findAll(userId: Long): Flow<SubscriptionDTO>
 
     @Query("""
         SELECT subscriptions.user_id
@@ -58,14 +59,14 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
         WHERE repositories.owner = :repositoryOwner
         AND   repositories.repository = :repositoryName
     """)
-    fun findAllSubscribers(repositoryOwner: String, repositoryName: String): Flow<UserId>
+    fun findSubscribers(repositoryOwner: String, repositoryName: String): Flow<UserId>
 
     @Query("""
         INSERT INTO subscriptions (user_id, repository_id, subscribed_at)
         VALUES (:userId, :repositoryId, :subscribedAt)
         ON CONFLICT DO NOTHING
     """)
-    suspend fun insertSubscription(userId: Long, repositoryId: Long, subscribedAt: LocalDateTime): Unit
+    suspend fun insert(userId: Long, repositoryId: Long, subscribedAt: LocalDateTime): Unit
 
     @Query("""
         DELETE FROM subscriptions
@@ -74,11 +75,13 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
         WHERE owner = :owner AND repository = :repository
         )
     """)
-    suspend fun deleteSubscription(userId: Long, owner: String, repository: String): Unit
+    suspend fun delete(userId: Long, owner: String, repository: String): Unit
 
 }
 
 interface RepositoryRepo : CoroutineCrudRepository<RepositoryDTO, Long> {
+    suspend fun findByOwnerAndRepository(owner: String, repository: String): Long?
+
     @Query("""
         INSERT INTO repositories(owner, repository)
         VALUES (:repositoryOwner, :repositoryName)
@@ -108,23 +111,22 @@ class DefaultSubscriptionsPersistence(
     private val transactionOperator: TransactionalOperator
 ) : SubscriptionsPersistence {
     override suspend fun findAll(user: UserId): List<Subscription> =
-        subscriptions.findAllByUserId(user.serial).map { subscription ->
-            Subscription(
-                Repository(subscription.owner, subscription.repository),
-                subscription.subscribedAt.toKotlinLocalDateTime()
-            )
+        subscriptions.findAll(user.serial).map { (owner, repository, subscribedAt) ->
+            Subscription(Repository(owner, repository), subscribedAt.toKotlinLocalDateTime())
         }.toList()
 
     override suspend fun findSubscribers(repository: Repository): List<UserId> =
-        subscriptions.findAllSubscribers(repository.owner, repository.name).toList()
+        subscriptions.findSubscribers(repository.owner, repository.name).toList()
 
     override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
         transactionOperator.executeAndAwait {
             subscription.traverse { (repository, subscribedAt) ->
-                val repoId = repositories.insert(repository.owner, repository.name)
+                val repoId =
+                    repositories.findByOwnerAndRepository(repository.owner, repository.name) ?:
+                    repositories.insert(repository.owner, repository.name)
 
                 catch({
-                    subscriptions.insertSubscription(user.serial, repoId, subscribedAt.toJavaLocalDateTime())
+                    subscriptions.insert(user.serial, repoId, subscribedAt.toJavaLocalDateTime())
                 }) { error: PSQLException ->
                     if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
                     else throw error
@@ -135,7 +137,7 @@ class DefaultSubscriptionsPersistence(
     override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) {
         if (repositories.isEmpty()) Unit else transactionOperator.executeAndAwait {
             repositories.forEach { (owner, name) ->
-                subscriptions.deleteSubscription(user.serial, owner, name)
+                subscriptions.delete(user.serial, owner, name)
             }
         }
     }
