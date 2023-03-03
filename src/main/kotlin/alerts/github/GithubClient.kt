@@ -11,6 +11,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.plugins.resources.Resources
 import io.ktor.client.plugins.resources.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource as KtorRes
@@ -30,6 +31,7 @@ suspend fun ResourceScope.GithubClient(
 ): GithubClient {
   val client = autoCloseable {
     HttpClient {
+      install(Resources)
       install(HttpCache)
       install(DefaultRequest) { url(config.uri) }
     }
@@ -55,7 +57,7 @@ private class DefaultGithubClient(
   @Serializable
   @KtorRes("/repos/{owner}/{repo}")
   class Repo(val owner: String, val repo: String)
-  
+
   override suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean> = either {
     retryPolicy.retry {
       val response = httpClient.get(Repo(owner, name)) {
