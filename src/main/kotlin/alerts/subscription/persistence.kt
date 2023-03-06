@@ -42,9 +42,8 @@ class SqlDelightSubscriptionsPersistence(
     subscriptions.transactionWithResult {
       subscription.traverse { (repository, subscribedAt) ->
         val repoId =
-          repositories.insert(repository.owner, repository.name).executeAsOneOrNull() ?: repositories.selectId(
-            repository.owner, repository.name
-          ).executeAsOne()
+          repositories.selectId(repository.owner, repository.name).executeAsOneOrNull() ?:
+          repositories.insert(repository.owner, repository.name).executeAsOne()
         
         catch({
           subscriptions.insert(user, repoId, subscribedAt.toJavaLocalDateTime())
