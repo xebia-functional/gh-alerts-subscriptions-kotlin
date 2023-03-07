@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
   alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.kover)
   id(libs.plugins.detekt.pluginId)
-  id("org.springframework.boot") version "3.0.3"
+  id("org.springframework.boot") version "3.0.4"
   id("io.spring.dependency-management") version "1.1.0"
   kotlin("jvm")
   kotlin("plugin.spring") version "1.7.22"
@@ -103,9 +103,6 @@ dependencies {
 
   runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.89.Final:osx-aarch_64")
 
-
-  testImplementation(libs.testcontainers.postgresql)
-  testImplementation(libs.testcontainers.kafka)
   testImplementation(libs.bundles.kotest)
   testImplementation("org.springframework.boot:spring-boot-starter-test:3.0.0")
 }

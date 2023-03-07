@@ -27,7 +27,7 @@ interface UserRepo : CoroutineCrudRepository<UserDTO, Long> {
   suspend fun findBySlackUserId(slackUserId: String): UserDTO?
 
   @Query("INSERT INTO users(slack_user_id) VALUES (:slackUserId) RETURNING user_id")
-  suspend fun insertSlackUserId(slackUserId: String): UserDTO
+  suspend fun insertSlackUserId(slackUserId: String): Long
 }
 
 interface UserPersistence {
@@ -58,8 +58,9 @@ class DefaultUserPersistence(
 
   override suspend fun insertSlackUser(slackUserId: SlackUserId): User =
     transactionOperator.executeAndAwait {
-      (queries.findBySlackUserId(slackUserId.slackUserId) ?: queries.insertSlackUserId(slackUserId.slackUserId))
-        .let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
-        .also { slackUsersCounter.inc() }
-    } ?: error("Failed to insert slack user")
+      (queries.findBySlackUserId(slackUserId.slackUserId) ?:
+        UserDTO(queries.insertSlackUserId(slackUserId.slackUserId), slackUserId.slackUserId)
+          .also { slackUsersCounter.inc() }
+      ).let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+    }
 }

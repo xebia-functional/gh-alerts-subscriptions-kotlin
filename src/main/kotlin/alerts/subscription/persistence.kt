@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
-import org.postgresql.util.PSQLException
-import org.postgresql.util.PSQLState
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.relational.core.mapping.Column
@@ -59,7 +58,7 @@ interface SubscriptionRepo : CoroutineCrudRepository<SubscriptionDTO, Long> {
         WHERE repositories.owner = :repositoryOwner
         AND   repositories.repository = :repositoryName
     """)
-    fun findSubscribers(repositoryOwner: String, repositoryName: String): Flow<UserId>
+    fun findSubscribers(repositoryOwner: String, repositoryName: String): Flow<Long>
 
     @Query("""
         INSERT INTO subscriptions (user_id, repository_id, subscribed_at)
@@ -116,10 +115,10 @@ class DefaultSubscriptionsPersistence(
         }.toList()
 
     override suspend fun findSubscribers(repository: Repository): List<UserId> =
-        subscriptions.findSubscribers(repository.owner, repository.name).toList()
+        subscriptions.findSubscribers(repository.owner, repository.name).map { UserId(it) }.toList()
 
     override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
-        transactionOperator.executeAndAwait {
+        transactionOperator.executeAndAwait { transaction ->
             subscription.traverse { (repository, subscribedAt) ->
                 val repoId =
                     repositories.findByOwnerAndRepository(repository.owner, repository.name) ?:
@@ -127,12 +126,15 @@ class DefaultSubscriptionsPersistence(
 
                 catch({
                     subscriptions.insert(user.serial, repoId, subscribedAt.toJavaLocalDateTime())
-                }) { error: PSQLException ->
+                }) { error: DataIntegrityViolationException ->
                     if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
                     else throw error
                 }
-            }.fold({ it.left() }, { Unit.right() })
-        } ?: error("Failed to subscribe")
+            }.fold(
+                { it.left().also { transaction.setRollbackOnly() } },
+                { Unit.right() }
+            )
+        }
 
     override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) {
         if (repositories.isEmpty()) Unit else transactionOperator.executeAndAwait {
@@ -142,7 +144,6 @@ class DefaultSubscriptionsPersistence(
         }
     }
 
-    fun PSQLException.isUserIdForeignKeyViolation(): Boolean =
-        sqlState == PSQLState.FOREIGN_KEY_VIOLATION.state &&
-                message?.contains("subscriptions_user_id_fkey") == true
+    fun DataIntegrityViolationException.isUserIdForeignKeyViolation(): Boolean =
+        message?.contains("subscriptions_user_id_fkey") == true
 }
