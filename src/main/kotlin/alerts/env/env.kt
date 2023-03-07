@@ -54,3 +54,11 @@ data class Kafka @ConstructorBinding constructor(
     put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
   }
 }
+
+@ConfigurationProperties("spring.flyway")
+data class FlywayProperties @ConstructorBinding constructor(
+  val url: String,
+  val schemas: String,
+  val user: String,
+  val password: String
+)

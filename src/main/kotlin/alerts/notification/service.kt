@@ -44,7 +44,9 @@ class Notifications(
   private val fullNamePath: Optional<JsonElement, String> = JsonPath.path("repository.full_name.string").string
   private val logger = KotlinLogging.logger { }
 
-  private suspend fun extractRepo(event: GithubEvent): Either<NotificationError, Repository> =
+  private suspend fun extractRepo(
+    event: GithubEvent
+  ): Either<NotificationError, Repository> =
     either {
       val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
         MalformedJson(event.event, error)
@@ -54,7 +56,9 @@ class Notifications(
       Repository(owner, name)
     }
 
-  private suspend fun findSubscribers(event: GithubEvent): Either<NotificationError, List<SlackNotification>> = either {
+  private suspend fun findSubscribers(
+    event: GithubEvent
+  ): Either<NotificationError, List<SlackNotification>> = either {
     val repo = extractRepo(event).bind()
     val userIds = service.findSubscribers(repo)
     val slackUserIds = userIds.mapNotNull { users.find(it)?.slackUserId }

@@ -16,6 +16,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
+import org.flywaydb.core.Flyway
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -27,7 +28,6 @@ import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kafka.sender.SenderOptions
-
 
 @Configuration
 @ComponentScan
@@ -122,6 +122,13 @@ class AppConfig {
       .partitions(kafka.subscription.numPartitions)
       .replicas(kafka.subscription.replicationFactor.toInt())
       .build()
+
+    @Bean
+    fun flyway(flywayProperties: FlywayProperties): Flyway =
+      Flyway(Flyway.configure()
+        .schemas(flywayProperties.schemas)
+        .dataSource(flywayProperties.url, flywayProperties.user, flywayProperties.password)
+      ).apply { migrate() }
 }
 
 private object NothingSerializer : Serializer<Nothing> {

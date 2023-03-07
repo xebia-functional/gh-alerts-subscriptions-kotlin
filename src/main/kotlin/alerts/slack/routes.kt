@@ -23,12 +23,14 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Controller
-class SlackController @Autowired constructor(private val service: SubscriptionService) {
+class SlackController(private val service: SubscriptionService) {
   @GetMapping(
     "/slack/command",
     consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE]
   )
-  suspend fun get(@RequestParam params: MultiValueMap<String, String>): ResponseEntity<String> =
+  suspend fun get(
+    @RequestParam params: MultiValueMap<String, String>
+  ): ResponseEntity<String> =
     either<ResponseEntity<String>, Unit> {
       val command = params.decodeSlashCommand().bind()
       ensure(command.command == Command.Subscribe) { ResponseEntity(INTERNAL_SERVER_ERROR) }
