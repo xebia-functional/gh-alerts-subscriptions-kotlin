@@ -2,15 +2,15 @@ package alerts.persistence
 
 import alerts.IntegrationTestBase
 import alerts.TestMetrics
-import alerts.user.*
+import alerts.user.DefaultUserPersistence
+import alerts.user.SlackUserId
+import alerts.user.UserId
+import alerts.user.UserRepo
 import arrow.core.nonEmptyListOf
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.springframework.context.ApplicationContextInitializer
-import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.context.support.beans
 import org.springframework.transaction.reactive.TransactionalOperator
 
 class UserPersistenceSpec(
@@ -82,13 +82,3 @@ class UserPersistenceSpec(
         TestMetrics.slackUsersCounter.get() shouldBe now
     }
 })
-
-class KafkaContainer : ApplicationContextInitializer<ConfigurableApplicationContext> {
-    override fun initialize(context: ConfigurableApplicationContext) {
-        beans {
-            bean {
-
-            }
-        }
-    }
-}
