@@ -14,8 +14,8 @@ import io.kotest.matchers.shouldBe
 import org.springframework.transaction.reactive.TransactionalOperator
 
 class UserPersistenceSpec(
-    userRepo: UserRepo,
-    transactionOperator: TransactionalOperator
+    private val userRepo: UserRepo,
+    private val transactionOperator: TransactionalOperator
 ) : IntegrationTestBase({
 
     val slackUserId = SlackUserId("test-user-id")

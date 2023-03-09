@@ -1,13 +1,7 @@
 package alerts.http.routes
 
 import alerts.github.GithubClient
-import alerts.subscription.UserNotFound
-import alerts.subscription.Repository
-import alerts.subscription.Subscription
-import alerts.subscription.SubscriptionController
-import alerts.subscription.SubscriptionsPersistence
-import alerts.subscription.SubscriptionProducer
-import alerts.subscription.SqlDelightSubscriptionService
+import alerts.subscription.*
 import alerts.user.SlackUserId
 import alerts.user.User
 import alerts.user.UserId
@@ -88,7 +82,7 @@ private val subscriptionProducer = object : SubscriptionProducer {
     override suspend fun delete(repo: Repository) = Unit
 }
 
-private val service = SqlDelightSubscriptionService(subscriptions, users, subscriptionProducer, client)
+private val service = SpringSubscriptionService(subscriptions, users, subscriptionProducer, client)
 
 private val clock: Clock = Clock.System
 

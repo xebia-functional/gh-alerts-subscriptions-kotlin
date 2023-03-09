@@ -19,8 +19,17 @@ class IntegrationTestBase(body: StringSpec.() -> Unit = {}) : StringSpec(body) {
     companion object {
         internal val container =
             ComposeContainer.container(
-                listOf(File("docker-compose.yml"), File("docker-compose.local.yml")),
-                listOf(Service.Postgres())
+                listOf(
+                    File("docker-compose.yml"),
+                    File("docker-compose.local.yml")
+                ),
+                listOf(
+                    Service.Postgres(),
+                    Service.Zookeeper(),
+                    Service.Broker(port = 9092),
+                    Service.Broker(port = 9093),
+                    Service.SchemaRegistry()
+                )
             ).also { it.start() }
     }
 }

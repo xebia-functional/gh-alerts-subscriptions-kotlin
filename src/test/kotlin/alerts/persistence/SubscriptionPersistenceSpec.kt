@@ -24,10 +24,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.springframework.transaction.reactive.TransactionalOperator
 
 class SubscriptionPersistenceSpec(
-    userRepo: UserRepo,
-    subscriptionRepo: SubscriptionRepo,
-    repositoryRepo: RepositoryRepo,
-    transactionOperator: TransactionalOperator
+    private val userRepo: UserRepo,
+    private val subscriptionRepo: SubscriptionRepo,
+    private val repositoryRepo: RepositoryRepo,
+    private val transactionOperator: TransactionalOperator
 ) : IntegrationTestBase({
 
     val arrow = Repository("Arrow-kt", "arrow")

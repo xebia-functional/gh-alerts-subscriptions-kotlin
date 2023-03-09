@@ -20,11 +20,23 @@ sealed class Service {
         override val name: String = "postgres"
         override val port: Int = 5432
         override val waitStrategy: WaitStrategy = defaultWaitStrategy
-            .apply {
-                withStrategy(
-                    Wait.forLogMessage(".*database system is ready to accept connections.*", 1)
-                )
-            }
+    }
+
+    class Zookeeper : Service() {
+        override val name: String = "zookeeper"
+        override val port: Int = 2181
+        override val waitStrategy: WaitStrategy = defaultWaitStrategy
+    }
+
+    class Broker(override val port: Int) : Service() {
+        override val name: String = "broker"
+        override val waitStrategy: WaitStrategy = defaultWaitStrategy
+    }
+
+    class SchemaRegistry : Service() {
+        override val name: String = "schema-registry"
+        override val port: Int = 8081
+        override val waitStrategy: WaitStrategy = defaultWaitStrategy
     }
 }
 
@@ -36,6 +48,7 @@ class ComposeContainer(
             composeFiles: List<File>, services: List<Service>
         ): ComposeContainer =
             ComposeContainer(composeFiles)
-                .apply { services.forEach { withExposedService(it.name, it.port, it.waitStrategy) } }
+                .withLocalCompose(false)
+                .apply { services.forEach {  withExposedService(it.name, it.port, it.waitStrategy) } }
     }
 }
