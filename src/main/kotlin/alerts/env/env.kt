@@ -1,9 +1,10 @@
 package alerts.env
 
-import java.util.Properties
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.ConstructorBinding
+import java.util.*
 
 @ConfigurationProperties("github")
 data class Github @ConstructorBinding constructor(val url: String, val token: String?)
@@ -48,10 +49,13 @@ data class Kafka @ConstructorBinding constructor(
   fun consumerProperties() = Properties().apply {
     put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
     put(ConsumerConfig.GROUP_ID_CONFIG, eventConsumerGroupId)
+    put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
+    put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false")
   }
 
   fun producerProperties() = Properties().apply {
-    put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+    put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+    put(ProducerConfig.ACKS_CONFIG, "1")
   }
 }
 

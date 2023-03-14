@@ -6,6 +6,7 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy
 import org.testcontainers.containers.wait.strategy.WaitStrategy
 import java.io.File
 
+
 sealed class Service {
     abstract val name: String
     abstract val port: Int
@@ -28,8 +29,9 @@ sealed class Service {
         override val waitStrategy: WaitStrategy = defaultWaitStrategy
     }
 
-    class Broker(override val port: Int) : Service() {
+    class Kafka : Service() {
         override val name: String = "broker"
+        override val port: Int = 9092
         override val waitStrategy: WaitStrategy = defaultWaitStrategy
     }
 
@@ -49,6 +51,17 @@ class ComposeContainer(
         ): ComposeContainer =
             ComposeContainer(composeFiles)
                 .withLocalCompose(false)
-                .apply { services.forEach {  withExposedService(it.name, it.port, it.waitStrategy) } }
+                .apply { services.forEach { withExposedService(it.name, it.port, it.waitStrategy) } }
     }
+
+    fun getBootstrapServers(): String =
+        with(Service.Kafka()) {
+            "PLAINTEXT://${getServiceHost(name, port)}:${getServicePort(name, port)}"
+        }
+
+    fun getSchemaRegistryUrl(): String =
+        with(Service.SchemaRegistry()) {
+            "http://${getServiceHost(name, port)}:${getServicePort(name, port)}"
+        }
 }
+
