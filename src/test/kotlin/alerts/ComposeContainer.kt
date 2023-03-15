@@ -29,7 +29,7 @@ sealed class Service {
         override val waitStrategy: WaitStrategy = defaultWaitStrategy
     }
 
-    class Kafka : Service() {
+    class Broker : Service() {
         override val name: String = "broker"
         override val port: Int = 9092
         override val waitStrategy: WaitStrategy = defaultWaitStrategy
@@ -53,15 +53,4 @@ class ComposeContainer(
                 .withLocalCompose(false)
                 .apply { services.forEach { withExposedService(it.name, it.port, it.waitStrategy) } }
     }
-
-    fun getBootstrapServers(): String =
-        with(Service.Kafka()) {
-            "PLAINTEXT://${getServiceHost(name, port)}:${getServicePort(name, port)}"
-        }
-
-    fun getSchemaRegistryUrl(): String =
-        with(Service.SchemaRegistry()) {
-            "http://${getServiceHost(name, port)}:${getServicePort(name, port)}"
-        }
 }
-

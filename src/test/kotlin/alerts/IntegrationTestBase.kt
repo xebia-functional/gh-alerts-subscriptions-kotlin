@@ -26,7 +26,7 @@ class IntegrationTestBase(body: StringSpec.() -> Unit = {}) : StringSpec(body) {
                 listOf(
                     Service.Postgres(),
                     Service.Zookeeper(),
-                    Service.Kafka(),
+                    Service.Broker(),
                     Service.SchemaRegistry()
                 )
             ).also { it.start() }

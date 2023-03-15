@@ -1,7 +1,13 @@
 package alerts.http.routes
 
 import alerts.github.GithubClient
-import alerts.subscription.*
+import alerts.subscription.Repository
+import alerts.subscription.SpringSubscriptionService
+import alerts.subscription.Subscription
+import alerts.subscription.SubscriptionController
+import alerts.subscription.SubscriptionProducer
+import alerts.subscription.SubscriptionsPersistence
+import alerts.subscription.UserNotFound
 import alerts.user.SlackUserId
 import alerts.user.User
 import alerts.user.UserId

@@ -61,7 +61,7 @@ class UserPersistenceSpec(
         val users = nonEmptyListOf(
             persistence.insertSlackUser(slackUserId),
             persistence.insertSlackUser(SlackUserId("test-user-id-2")),
-            persistence.insertSlackUser(SlackUserId("test-user-id-3")),
+            persistence.insertSlackUser(SlackUserId("test-user-id-3"))
         )
         val ids = users.map { it.userId }
         persistence.findUsers(ids) shouldBe users

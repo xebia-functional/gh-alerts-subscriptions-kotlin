@@ -2,10 +2,7 @@ package alerts.service
 
 import alerts.IntegrationTestBase
 import alerts.env.AppConfig
-import alerts.env.EventTopic
 import alerts.env.Kafka
-import alerts.env.NotificationTopic
-import alerts.env.SubscriptionTopic
 import alerts.github.GithubError
 import alerts.kafka.AvroSerializer
 import alerts.subscription.DefaultSubscriptionProducer
@@ -44,12 +41,11 @@ import java.util.*
 class SubscriptionServiceSpec(
     private val subscriptions: SubscriptionsPersistence,
     private val users: UserPersistence,
-    private val kafkaConfig: Kafka,
     private val userRepo: UserRepo,
+    private val kafka: Kafka,
     private val appConfig: AppConfig
 ) : IntegrationTestBase({
 
-    val kafka = with(kafkaConfig) { kafka(subscription, event, notification) }
     val producer = producer(appConfig, kafka)
 
     val slackUserId = SlackUserId("test-user-id")
@@ -100,14 +96,6 @@ class SubscriptionServiceSpec(
     }
 })
 
-private fun kafka(
-    subscription: SubscriptionTopic,
-    event: EventTopic,
-    notification: NotificationTopic
-) = with(IntegrationTestBase.container) {
-    Kafka(getBootstrapServers(), getSchemaRegistryUrl(), subscription, event, notification)
-}
-
 private fun producer(
     appConfig: AppConfig, kafka: Kafka
 ): DefaultSubscriptionProducer =
@@ -134,20 +122,21 @@ private fun consumer(kafka: Kafka): ReactiveKafkaConsumerTemplate<SubscriptionKe
 
 private suspend fun Kafka.committedMessages(
     kafkaAdmin: KafkaAdmin
-): Long = withConsumer(
-    consumerProperties(),
-    SubscriptionKey.serializer(),
-    SubscriptionEventRecord.serializer()
-) { consumer ->
-    val description = kafkaAdmin.describeTopics(subscription.name)[subscription.name]
-    val partitions = description?.partitions().orEmpty().map { info ->
-        TopicPartition(subscription.name, info.partition())
-    }.toSet()
+): Long =
+    withConsumer(
+        consumerProperties(),
+        SubscriptionKey.serializer(),
+        SubscriptionEventRecord.serializer()
+    ) { consumer ->
+        val description = kafkaAdmin.describeTopics(subscription.name)[subscription.name]
+        val partitions = description?.partitions().orEmpty().map { info ->
+            TopicPartition(subscription.name, info.partition())
+        }.toSet()
 
-    consumer.committed(partitions).mapNotNull { (_, offset) ->
-        offset?.takeIf { it.offset() > 0 }?.offset()
-    }.sum()
-}
+        consumer.committed(partitions).mapNotNull { (_, offset) ->
+            offset?.takeIf { it.offset() > 0 }?.offset()
+        }.sum()
+    }
 
 suspend fun <K, V, A> withConsumer(
     properties: Properties,
