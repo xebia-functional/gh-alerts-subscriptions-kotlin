@@ -1,13 +1,8 @@
-package alerts.http.routes
+@file:Suppress("MatchingDeclarationName")
+
+package alerts.subscription
 
 import alerts.github.GithubClient
-import alerts.subscription.Repository
-import alerts.subscription.SpringSubscriptionService
-import alerts.subscription.Subscription
-import alerts.subscription.SubscriptionController
-import alerts.subscription.SubscriptionProducer
-import alerts.subscription.SubscriptionsPersistence
-import alerts.subscription.UserNotFound
 import alerts.user.SlackUserId
 import alerts.user.User
 import alerts.user.UserId
@@ -23,6 +18,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import kotlin.random.Random
 
+@Suppress("MatchingDeclarationName")
 class SubscriptionControllerSpec : StringSpec({
     val testRepo = Repository("foo", "bar")
     val controller = SubscriptionController(service, clock, timeZone)

@@ -1,11 +1,9 @@
-package alerts.persistence
+@file:Suppress("MatchingDeclarationName")
+
+package alerts.user
 
 import alerts.IntegrationTestBase
 import alerts.TestMetrics
-import alerts.user.DefaultUserPersistence
-import alerts.user.SlackUserId
-import alerts.user.UserId
-import alerts.user.UserRepo
 import arrow.core.nonEmptyListOf
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
