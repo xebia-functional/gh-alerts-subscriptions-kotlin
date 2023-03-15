@@ -1,9 +1,8 @@
-@file:Suppress("MatchingDeclarationName")
-
 package alerts.subscription
 
 import alerts.IntegrationTestBase
 import alerts.TestMetrics
+import alerts.now
 import alerts.user.DefaultUserPersistence
 import alerts.user.SlackUserId
 import alerts.user.User

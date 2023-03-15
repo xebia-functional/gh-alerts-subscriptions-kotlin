@@ -12,10 +12,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.serialization.KSerializer
 import org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
+import org.apache.kafka.common.serialization.VoidDeserializer
+import org.apache.kafka.common.serialization.VoidSerializer
 import org.flywaydb.core.Flyway
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -28,6 +31,7 @@ import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kafka.sender.SenderOptions
+import java.util.*
 
 @Configuration
 @ComponentScan
@@ -60,24 +64,28 @@ class AppConfig {
   fun timeZone(): TimeZone = TimeZone.UTC
 
   @Bean
+  @Qualifier("event")
   fun eventReceiverSettings(kafka: Kafka): ReceiverOptions<Nothing, GithubEvent> =
-    ReceiverOptions.create<Nothing, GithubEvent>(kafka.consumerProperties())
-      .withValueDeserializer(AvroSerializer(GithubEvent.serializer()))
-      .withKeyDeserializer(NothingDeserializer)
-      .subscription(listOf(kafka.event.name))
+    receiverOptions(
+      kafka.event.name,
+      kafka.consumerProperties(),
+      GithubEvent.serializer()
+    )
 
   @Bean
+  @Qualifier("event")
   fun githubEventKafkaTemplate(
-    options: ReceiverOptions<Nothing, GithubEvent>
+    @Qualifier("event") options: ReceiverOptions<Nothing, GithubEvent>
   ): ReactiveKafkaConsumerTemplate<Nothing, GithubEvent> =
     ReactiveKafkaConsumerTemplate(options)
 
   @Bean
   @Qualifier("notification")
   fun notificationProducerSettings(kafka: Kafka): SenderOptions<Nothing, SlackNotification> =
-    SenderOptions.create<Nothing, SlackNotification>(kafka.producerProperties())
-      .withValueSerializer(AvroSerializer(SlackNotification.serializer()))
-      .withKeySerializer(NothingSerializer)
+    senderOptions(
+      kafka.producerProperties(),
+      SlackNotification.serializer()
+    )
 
   @Bean
   @Qualifier("notification")
@@ -88,9 +96,11 @@ class AppConfig {
 
   @Bean
   fun subscriptionProducerSettings(kafka: Kafka): SenderOptions<SubscriptionKey, SubscriptionEventRecord> =
-    SenderOptions.create<SubscriptionKey, SubscriptionEventRecord>(kafka.producerProperties())
-      .withValueSerializer(AvroSerializer(SubscriptionEventRecord.serializer()))
-      .withKeySerializer(AvroSerializer(SubscriptionKey.serializer()))
+    senderOptions(
+      kafka.producerProperties(),
+      SubscriptionKey.serializer(),
+      SubscriptionEventRecord.serializer()
+    )
 
   @Bean
   fun subscriptionKafkaTemplate(
@@ -139,3 +149,45 @@ private object NothingDeserializer : Deserializer<Nothing> {
   override fun deserialize(topic: String?, data: ByteArray?): Nothing =
     TODO()
 }
+
+fun <K, V> receiverOptions (
+  topicName: String,
+  properties: Properties,
+  keySerializer: KSerializer<K>,
+  valueSerializer: KSerializer<V>
+): ReceiverOptions<K, V> =
+  ReceiverOptions.create<K, V>(properties)
+    .subscription(listOf(topicName))
+    .withKeyDeserializer(AvroSerializer(keySerializer))
+    .withValueDeserializer(AvroSerializer(valueSerializer))
+
+@Suppress("UNCHECKED_CAST", "ForbiddenVoid")
+fun <V> receiverOptions(
+  topicName: String,
+  properties: Properties,
+  valueSerializer: KSerializer<V>
+): ReceiverOptions<Nothing, V> =
+  ReceiverOptions.create<Void, V>(properties)
+    .subscription(listOf(topicName))
+    .withKeyDeserializer(VoidDeserializer())
+    .withValueDeserializer(AvroSerializer(valueSerializer))
+          as ReceiverOptions<Nothing, V>
+
+fun <K, V> senderOptions (
+  properties: Properties,
+  keySerializer: KSerializer<K>,
+  valueSerializer: KSerializer<V>
+): SenderOptions<K, V> =
+  SenderOptions.create<K, V>(properties)
+    .withKeySerializer(AvroSerializer(keySerializer))
+    .withValueSerializer(AvroSerializer(valueSerializer))
+
+@Suppress("UNCHECKED_CAST", "ForbiddenVoid")
+fun <V> senderOptions(
+  properties: Properties,
+  valueSerializer: KSerializer<V>
+): SenderOptions<Nothing, V> =
+  SenderOptions.create<Void, V>(properties)
+    .withKeySerializer(VoidSerializer())
+    .withValueSerializer(AvroSerializer(valueSerializer))
+          as SenderOptions<Nothing, V>

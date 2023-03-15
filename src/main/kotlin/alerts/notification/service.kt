@@ -23,9 +23,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import mu.KotlinLogging
 import org.springframework.boot.CommandLineRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 
 @Service
+@Profile("!test")
 class Notifications(
   private val users: UserPersistence,
   private val service: SubscriptionsPersistence,

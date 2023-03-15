@@ -6,7 +6,6 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy
 import org.testcontainers.containers.wait.strategy.WaitStrategy
 import java.io.File
 
-
 sealed class Service {
     abstract val name: String
     abstract val port: Int

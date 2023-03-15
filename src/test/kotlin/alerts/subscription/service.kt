@@ -1,12 +1,12 @@
-@file:Suppress("MatchingDeclarationName")
-
 package alerts.subscription
 
 import alerts.IntegrationTestBase
 import alerts.env.AppConfig
 import alerts.env.Kafka
+import alerts.env.receiverOptions
 import alerts.github.GithubError
 import alerts.kafka.AvroSerializer
+import alerts.now
 import alerts.user.SlackUserId
 import alerts.user.UserPersistence
 import alerts.user.UserRepo
@@ -18,17 +18,13 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.KSerializer
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.TopicPartition
 import org.springframework.http.HttpStatus
 import org.springframework.kafka.core.KafkaAdmin
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate
-import reactor.kafka.receiver.ReceiverOptions
 import java.util.*
 
 class SubscriptionServiceSpec(
@@ -101,10 +97,12 @@ fun producer(
         )
     }
 
-fun consumer(kafka: Kafka): ReactiveKafkaConsumerTemplate<SubscriptionKey, SubscriptionEventRecord> =
+fun consumer(
+    kafka: Kafka
+): ReactiveKafkaConsumerTemplate<SubscriptionKey, SubscriptionEventRecord> =
     with(kafka) {
         ReactiveKafkaConsumerTemplate(
-            createReceiverOptions(
+            receiverOptions(
                 subscription.name,
                 consumerProperties(),
                 SubscriptionKey.serializer(),
@@ -112,19 +110,6 @@ fun consumer(kafka: Kafka): ReactiveKafkaConsumerTemplate<SubscriptionKey, Subsc
             )
         )
     }
-
-fun <K, V> createReceiverOptions(
-    topic: String,
-    properties: Properties,
-    keyDeserializer: KSerializer<K>,
-    valueDeserializer: KSerializer<V>
-): ReceiverOptions<K, V> =
-    ReceiverOptions.create<K, V>(properties).subscription(listOf(topic))
-        .withKeyDeserializer(AvroSerializer(keyDeserializer))
-        .withValueDeserializer(AvroSerializer(valueDeserializer))
-
-fun LocalDateTime.Companion.now(): LocalDateTime =
-    Clock.System.now().toLocalDateTime(TimeZone.UTC)
 
 private suspend fun Kafka.committedMessages(
     kafkaAdmin: KafkaAdmin
@@ -152,5 +137,3 @@ private suspend fun <K, V, A> withConsumer(
 ): A =
     KafkaConsumer(properties, AvroSerializer(keyDeserializer), AvroSerializer(valueDeserializer))
         .use { action(it, it) }
-
-

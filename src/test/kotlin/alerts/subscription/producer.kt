@@ -1,5 +1,3 @@
-@file:Suppress("MatchingDeclarationName")
-
 package alerts.subscription
 
 import alerts.IntegrationTestBase

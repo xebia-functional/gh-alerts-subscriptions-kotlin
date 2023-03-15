@@ -103,6 +103,8 @@ dependencies {
 
   runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.89.Final:osx-aarch_64")
 
+  annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
   testImplementation(libs.bundles.kotest)
-  testImplementation("org.springframework.boot:spring-boot-starter-test:3.0.0")
+  testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
