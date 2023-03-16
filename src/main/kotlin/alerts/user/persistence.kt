@@ -7,21 +7,27 @@ import kotlinx.coroutines.flow.toList
 import org.springframework.data.annotation.Id
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.relational.core.mapping.Column
+import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.stereotype.Component
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
 
-data class UserDto(
+@Table(name = "users")
+data class UserDTO(
   @Id
-  @Column("userId")
+  @Column("user_id")
   val userId: Long,
+  @Column("slack_user_id")
   val slackUserId: String
 )
 
-interface UserRepo : CoroutineCrudRepository<UserDto, Long> {
-  suspend fun findBySlackUserId(slackUserId: String): UserDto?
+interface UserRepo : CoroutineCrudRepository<UserDTO, Long> {
+
+  suspend fun findBySlackUserId(slackUserId: String): UserDTO?
 
   @Query("INSERT INTO users(slack_user_id) VALUES (:slackUserId) RETURNING user_id")
-  suspend fun insertSlackUserId(slackUserId: String): UserDto
+  suspend fun insertSlackUserId(slackUserId: String): Long
 }
 
 interface UserPersistence {
@@ -32,7 +38,11 @@ interface UserPersistence {
 }
 
 @Component
-class DefaultUserPersistence(private val queries: UserRepo, private val slackUsersCounter: Counter) : UserPersistence {
+class DefaultUserPersistence(
+  private val queries: UserRepo,
+  private val slackUsersCounter: Counter,
+  private val transactionOperator: TransactionalOperator
+) : UserPersistence {
   override suspend fun find(userId: UserId): User? =
     queries.findById(userId.serial)
       ?.let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
@@ -47,7 +57,11 @@ class DefaultUserPersistence(private val queries: UserRepo, private val slackUse
       .toList()
 
   override suspend fun insertSlackUser(slackUserId: SlackUserId): User =
-    queries.insertSlackUserId(slackUserId.slackUserId)
-      .let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
-      .also { slackUsersCounter.inc() }
+    transactionOperator.executeAndAwait {
+      val dto = queries.findBySlackUserId(slackUserId.slackUserId) ?:
+        UserDTO(queries.insertSlackUserId(slackUserId.slackUserId), slackUserId.slackUserId)
+          .also { slackUsersCounter.inc() }
+       User(UserId(dto.userId), SlackUserId(dto.slackUserId)
+      )
+    }
 }

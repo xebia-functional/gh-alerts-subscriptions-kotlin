@@ -2,7 +2,6 @@ package alerts.kafka
 
 import com.github.avrokotlin.avro4k.Avro
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
 

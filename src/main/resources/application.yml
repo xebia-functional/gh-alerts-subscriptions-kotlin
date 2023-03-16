@@ -36,9 +36,11 @@ spring:
     url: ${POSTGRES_R2DBC_URL:r2dbc:postgresql://localhost:5432/alerts}
     username: ${POSTGRES_USER:test}
     password: ${POSTGRES_USER:test}
+    properties:
+      schema: subscriptions
   flyway:
     url: ${POSTGRES_JDBC_URL:jdbc:postgresql://localhost:5432/alerts}
-    schemas: SUBSCRIPTIONSSERVICE
+    schemas: subscriptions
     user: ${POSTGRES_USER:test}
     password: ${POSTGRES_USER:test}
 

@@ -2,17 +2,16 @@ package alerts.github
 
 import alerts.env.Github
 import arrow.core.Either
-import arrow.core.continuations.either
-import arrow.fx.coroutines.Schedule
-import arrow.fx.coroutines.retry
-import mu.KotlinLogging
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
+import arrow.core.raise.either
+import arrow.fx.resilience.Schedule
+import arrow.fx.resilience.retry
 import kotlinx.coroutines.reactive.awaitSingle
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import kotlin.time.Duration.Companion.seconds
 
 fun interface GithubClient {
   suspend fun repositoryExists(owner: String, name: String): Either<GithubError, Boolean>
@@ -20,7 +19,6 @@ fun interface GithubClient {
 
 private const val DEFAULT_GITHUB_RETRY_COUNT = 3
 
-@OptIn(ExperimentalTime::class)
 private val DEFAULT_GITHUB_RETRY_SCHEDULE: Schedule<Throwable, Unit> =
   Schedule.recurs<Throwable>(DEFAULT_GITHUB_RETRY_COUNT)
     .and(Schedule.exponential(1.seconds))
@@ -52,7 +50,7 @@ class DefaultGithubClient(
         HttpStatus.NOT_FOUND -> false
         else -> {
           logger.info { "GitHub call failed with status: ${response.statusCode}" }
-          shift(GithubError(response.statusCode))
+          raise(GithubError(response.statusCode))
         }
       }
     }
