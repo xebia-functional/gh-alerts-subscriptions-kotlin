@@ -1,6 +1,5 @@
 package alerts.subscription
 
-import alerts.env.Kafka
 import alerts.env.SubscriptionTopic
 import kotlinx.coroutines.reactive.awaitSingle
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -15,7 +14,6 @@ interface SubscriptionProducer {
 @Component
 class DefaultSubscriptionProducer(
   private val producer: ReactiveKafkaProducerTemplate<SubscriptionKey, SubscriptionEventRecord>,
-  private val kafka: Kafka,
   private val topic: SubscriptionTopic,
 ) : SubscriptionProducer {
   override suspend fun publish(repo: Repository) {

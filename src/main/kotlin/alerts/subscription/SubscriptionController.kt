@@ -1,8 +1,8 @@
 package alerts.subscription
 
 import alerts.user.SlackUserId
-import arrow.core.continuations.either
 import arrow.core.merge
+import arrow.core.raise.either
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

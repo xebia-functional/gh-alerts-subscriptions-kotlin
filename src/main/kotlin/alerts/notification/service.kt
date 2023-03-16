@@ -6,10 +6,10 @@ import alerts.github.SlackNotification
 import alerts.subscription.Repository
 import alerts.subscription.SubscriptionsPersistence
 import alerts.user.UserPersistence
-import alerts.catch
 import arrow.core.Either
-import arrow.core.continuations.either
-import arrow.core.continuations.ensureNotNull
+import arrow.core.raise.catch
+import arrow.core.raise.either
+import arrow.core.raise.ensureNotNull
 import arrow.optics.Optional
 import io.github.nomisrev.JsonPath
 import io.github.nomisrev.path
@@ -49,8 +49,8 @@ class Notifications(
   ): Either<NotificationError, Repository> =
     either {
       val json = catch({ Json.parseToJsonElement(event.event) }) { error: SerializationException ->
-        MalformedJson(event.event, error)
-      }.bind()
+        raise(MalformedJson(event.event, error))
+      }
       val fullName = ensureNotNull(fullNamePath.getOrNull(json)) { RepoFullNameNotFound(json) }
       val (owner, name) = ensureNotNull(fullName.split("/").takeIf { it.size == 2 }) { CannotExtractRepo(fullName) }
       Repository(owner, name)

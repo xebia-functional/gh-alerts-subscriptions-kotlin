@@ -1,5 +1,5 @@
 [versions]
-arrow = "1.1.5"
+arrow = "2.0.0-SNAPSHOT"
 suspendapp = "0.3.1"
 arrowGradleConfig = "0.10.1"
 coroutines = "1.6.4"
@@ -29,6 +29,7 @@ tegralOpenApi = "0.0.3"
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 arrow-fx = { module = "io.arrow-kt:arrow-fx-coroutines", version.ref = "arrow" }
+arrow-fx-resilience = { module = "io.arrow-kt:arrow-fx-resilience", version.ref = "arrow" }
 suspendapp = { module = "io.arrow-kt:suspendapp", version.ref = "suspendapp" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
@@ -56,7 +57,7 @@ avro = { module = "org.apache.avro:avro", version.ref = "avro" }
 micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "prometheus" }
 
 [bundles]
-arrow = ["arrow-core", "arrow-fx"]
+arrow = ["arrow-core", "arrow-fx", "arrow-fx-resilience"]
 kotest = [
     "kotest-assertionsCore",
     "kotest-frameworkEngine",

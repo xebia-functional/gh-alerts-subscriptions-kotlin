@@ -58,9 +58,10 @@ class DefaultUserPersistence(
 
   override suspend fun insertSlackUser(slackUserId: SlackUserId): User =
     transactionOperator.executeAndAwait {
-      (queries.findBySlackUserId(slackUserId.slackUserId) ?:
+      val dto = queries.findBySlackUserId(slackUserId.slackUserId) ?:
         UserDTO(queries.insertSlackUserId(slackUserId.slackUserId), slackUserId.slackUserId)
           .also { slackUsersCounter.inc() }
-      ).let { User(UserId(it.userId), SlackUserId(it.slackUserId)) }
+       User(UserId(dto.userId), SlackUserId(dto.slackUserId)
+      )
     }
 }

@@ -1,11 +1,9 @@
 package alerts.subscription
 
-import alerts.catch
 import alerts.user.UserId
 import arrow.core.Either
-import arrow.core.left
-import arrow.core.right
-import arrow.core.traverse
+import arrow.core.raise.catch
+import arrow.core.raise.either
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -118,22 +116,21 @@ class DefaultSubscriptionsPersistence(
         subscriptions.findSubscribers(repository.owner, repository.name).map { UserId(it) }.toList()
 
     override suspend fun subscribe(user: UserId, subscription: List<Subscription>): Either<UserNotFound, Unit> =
-        transactionOperator.executeAndAwait { transaction ->
-            subscription.traverse { (repository, subscribedAt) ->
-                val repoId =
-                    repositories.findByOwnerAndRepository(repository.owner, repository.name) ?:
-                    repositories.insert(repository.owner, repository.name)
+        either {
+            transactionOperator.executeAndAwait {
+                subscription.map { (repository, subscribedAt) ->
+                    val repoId =
+                        repositories.findByOwnerAndRepository(repository.owner, repository.name) ?:
+                        repositories.insert(repository.owner, repository.name)
 
-                catch({
-                    subscriptions.insert(user.serial, repoId, subscribedAt.toJavaLocalDateTime())
-                }) { error: DataIntegrityViolationException ->
-                    if (error.isUserIdForeignKeyViolation()) UserNotFound(user)
-                    else throw error
+                    catch({
+                        subscriptions.insert(user.serial, repoId, subscribedAt.toJavaLocalDateTime())
+                    }) { error: DataIntegrityViolationException ->
+                        if (error.isUserIdForeignKeyViolation()) raise(UserNotFound(user))
+                        else throw error
+                    }
                 }
-            }.fold(
-                { it.left().also { transaction.setRollbackOnly() } },
-                { Unit.right() }
-            )
+            }
         }
 
     override suspend fun unsubscribe(user: UserId, repositories: List<Repository>) {

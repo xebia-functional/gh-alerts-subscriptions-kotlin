@@ -1,17 +1,18 @@
 package alerts.slack
 
 import alerts.subscription.Repository
-import alerts.user.SlackUserId
 import alerts.subscription.Subscription
 import alerts.subscription.SubscriptionService
+import alerts.user.SlackUserId
 import arrow.core.Either
-import arrow.core.continuations.either
-import arrow.core.continuations.ensureNotNull
 import arrow.core.identity
+import arrow.core.raise.catch
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
@@ -34,10 +35,13 @@ class SlackController(private val service: SubscriptionService) {
     either<ResponseEntity<String>, Unit> {
       val command = params.decodeSlashCommand().bind()
       ensure(command.command == Command.Subscribe) { ResponseEntity(INTERNAL_SERVER_ERROR) }
-      attempt {
+
+      catch({
         service.subscribe(command.userId, Subscription(command.repo, Clock.System.now().toLocalDateTime(TimeZone.UTC)))
-          .bind()
-      } catch { shift(ResponseEntity(BAD_REQUEST)) }
+      }) {
+        raise(ResponseEntity(BAD_REQUEST))
+      }
+
     }.fold(::identity) { ResponseEntity(HttpStatus.CREATED) }
 }
 

@@ -4,8 +4,9 @@ import alerts.github.GithubClient
 import alerts.user.SlackUserId
 import alerts.user.UserPersistence
 import arrow.core.Either
-import arrow.core.continuations.either
-import arrow.core.continuations.ensureNotNull
+import arrow.core.raise.either
+import arrow.core.raise.ensure
+import arrow.core.raise.ensureNotNull
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 
