@@ -1,5 +1,5 @@
 [versions]
-arrow = "1.1.5"
+arrow = "1.1.6-alpha.28"
 suspendapp = "0.4.0"
 arrowGradleConfig = "0.10.1"
 coroutines = "1.6.4"

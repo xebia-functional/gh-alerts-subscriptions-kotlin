@@ -1,9 +1,9 @@
 package alerts.subscription
 
-import alerts.user.UserId
 import alerts.catch
 import alerts.sqldelight.RepositoriesQueries
 import alerts.sqldelight.SubscriptionsQueries
+import alerts.user.UserId
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right

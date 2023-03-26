@@ -16,7 +16,6 @@ import alerts.user.User
 import alerts.user.UserId
 import io.kotest.assertions.arrow.core.shouldBeLeft
 import io.kotest.assertions.arrow.core.shouldBeRight
-import io.kotest.assertions.arrow.fx.coroutines.extension
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
