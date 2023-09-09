@@ -1,7 +1,7 @@
 rootProject.name = "gh-alerts-subscriptions-kotlin"
 
 plugins {
-  id("com.gradle.enterprise") version "3.12.2"
+  id("com.gradle.enterprise") version "3.14.1"
 }
 
 dependencyResolutionManagement {
